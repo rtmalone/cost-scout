@@ -1,0 +1,25 @@
+{
+  "name": "cost-scout",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An agent that finds cloud cost waste in FOCUS billing data and proposes safe, reversible fixes",
+  "type": "module",
+  "scripts": {
+    "generate": "tsx src/data/generate.ts",
+    "scout": "tsx src/cli.ts",
+    "eval": "tsx evals/run-evals.ts",
+    "test": "node --import tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "packageManager": "pnpm@10.29.3",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "@duckdb/node-api": "1.5.6-r.1",
+    "dotenv": "^18.0.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

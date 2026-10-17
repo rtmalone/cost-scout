@@ -1,0 +1,125 @@
+{
+  "analysis_date": "2026-10-01",
+  "period": {
+    "start": "2026-07-03",
+    "days": 90
+  },
+  "findings": [
+    {
+      "id": "gp2-to-gp3",
+      "category": "storage-modernization",
+      "title": "Migrate attached gp2 volumes to gp3",
+      "resource_ids": [
+        "vol-0b2c3d4e5f6a70021",
+        "vol-0b2c3d4e5f6a70022"
+      ],
+      "expected_monthly_savings_usd": 40,
+      "tolerance_pct": 15
+    },
+    {
+      "id": "idle-ec2",
+      "category": "idle-compute",
+      "title": "Idle m5.2xlarge running 24/7",
+      "resource_ids": [
+        "i-0e8f7a6b5c4d30031"
+      ],
+      "expected_monthly_savings_usd": 276.48,
+      "tolerance_pct": 15
+    },
+    {
+      "id": "unattached-ebs",
+      "category": "unattached-storage",
+      "title": "Unattached EBS volumes left behind by terminated instances",
+      "resource_ids": [
+        "vol-0f1e2d3c4b5a60041",
+        "vol-0f1e2d3c4b5a60042"
+      ],
+      "expected_monthly_savings_usd": 150,
+      "tolerance_pct": 10
+    },
+    {
+      "id": "old-snapshots",
+      "category": "stale-snapshot",
+      "title": "Year-old snapshots of volumes that no longer exist",
+      "resource_ids": [
+        "snap-0c1d2e3f4a5b60001",
+        "snap-0c1d2e3f4a5b60002",
+        "snap-0c1d2e3f4a5b60003",
+        "snap-0c1d2e3f4a5b60004",
+        "snap-0c1d2e3f4a5b60005",
+        "snap-0c1d2e3f4a5b60006",
+        "snap-0c1d2e3f4a5b60007",
+        "snap-0c1d2e3f4a5b60008",
+        "snap-0c1d2e3f4a5b60009",
+        "snap-0c1d2e3f4a5b60010",
+        "snap-0c1d2e3f4a5b60011",
+        "snap-0c1d2e3f4a5b60012"
+      ],
+      "expected_monthly_savings_usd": 120,
+      "tolerance_pct": 10
+    },
+    {
+      "id": "oversized-lambda",
+      "category": "oversized-function",
+      "title": "Lambda allocated 3 GB but never uses more than ~210 MB",
+      "resource_ids": [
+        "arn:aws:lambda:us-east-1:111111111111:function:etl-transform"
+      ],
+      "expected_monthly_savings_usd": 48.75,
+      "tolerance_pct": 35
+    },
+    {
+      "id": "nat-spike",
+      "category": "cost-anomaly",
+      "title": "NAT Gateway data processing jumped ~14x in the last two weeks",
+      "resource_ids": [
+        "nat-0a9b8c7d6e5f40051"
+      ],
+      "expected_monthly_savings_usd": 1255.5,
+      "tolerance_pct": 40
+    },
+    {
+      "id": "dev-always-on",
+      "category": "schedule-non-prod",
+      "title": "Dev instances run 24/7 but are only used during business hours",
+      "resource_ids": [
+        "i-0a2b3c4d5e6f70061",
+        "i-0a2b3c4d5e6f70062"
+      ],
+      "expected_monthly_savings_usd": 314.74,
+      "tolerance_pct": 30
+    },
+    {
+      "id": "azure-unattached-disk",
+      "category": "unattached-storage",
+      "title": "Unattached 1 TiB Premium SSD managed disk",
+      "resource_ids": [
+        "/subscriptions/sub-3f9c2a71/resourceGroups/rg-analytics/providers/Microsoft.Compute/disks/analytics-scratch-disk"
+      ],
+      "expected_monthly_savings_usd": 135.17,
+      "tolerance_pct": 10
+    }
+  ],
+  "decoys": [
+    {
+      "resource_id": "i-0d7e1f2a3b4c50021",
+      "reason": "Low CPU (~4%) but ~500 GB/day of network egress: a network-bound broker, not an idle instance."
+    },
+    {
+      "resource_id": "snap-0f9e8d7c6b5a4001",
+      "reason": "Recent (<30 days) weekly snapshots of a live volume: normal backup hygiene."
+    },
+    {
+      "resource_id": "snap-0f9e8d7c6b5a4002",
+      "reason": "Recent (<30 days) weekly snapshots of a live volume: normal backup hygiene."
+    },
+    {
+      "resource_id": "arn:aws:lambda:us-east-1:111111111111:function:ml-feature-builder",
+      "reason": "Allocated 3 GB and peaks around 2.75 GB: large, but correctly sized."
+    },
+    {
+      "resource_id": "i-0b3c4d5e6f7a80071",
+      "reason": "Non-prod, but already scheduled: it only bills ~12 hours on weekdays."
+    }
+  ]
+}
