@@ -2,6 +2,8 @@
 
 An agent that analyzes cloud billing data, finds cost waste, and proposes fixes, each with evidence, a rollback plan, and a risk level. It **never changes anything**. It can look and propose; a human approves and executes.
 
+See [PLAN.md](PLAN.md) for scope, status, eval targets, and design decisions.
+
 ## How it works
 
 ```
