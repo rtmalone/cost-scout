@@ -50,7 +50,8 @@ function billingRow(r: ResourceSpec, date: string, usage: number) {
     BillingAccountId: r.account.billingAccountId,
     SubAccountId: r.account.id,
     SubAccountName: r.account.name,
-    ProviderName: r.provider,
+    ServiceProviderName: r.provider,
+    HostProviderName: r.provider,
     ServiceName: r.serviceName,
     ServiceCategory: r.serviceCategory,
     RegionId: r.region,
@@ -134,7 +135,7 @@ export async function generate(opts: { dataDir?: string; groundTruthPath?: strin
       SELECT * REPLACE (Tags::JSON AS Tags)
       FROM read_json('${stage('billing', billing)}', format = 'newline_delimited', columns = {
         BillingAccountId: 'VARCHAR', SubAccountId: 'VARCHAR', SubAccountName: 'VARCHAR',
-        ProviderName: 'VARCHAR', ServiceName: 'VARCHAR', ServiceCategory: 'VARCHAR',
+        ServiceProviderName: 'VARCHAR', HostProviderName: 'VARCHAR', ServiceName: 'VARCHAR', ServiceCategory: 'VARCHAR',
         RegionId: 'VARCHAR', ResourceId: 'VARCHAR', ResourceName: 'VARCHAR', ResourceType: 'VARCHAR',
         SkuId: 'VARCHAR', ChargeCategory: 'VARCHAR', ChargeDescription: 'VARCHAR',
         ChargePeriodStart: 'TIMESTAMP', ChargePeriodEnd: 'TIMESTAMP',

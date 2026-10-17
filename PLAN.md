@@ -106,3 +106,9 @@ Not in scope now, but the path from here:
 3. **Cross-account access:** a read-only role for discovery, and a separate, tightly scoped role used only for approved changes.
 4. **Approval and execution:** approve → apply through IaC → check that the savings actually show up → roll back if they don't.
 5. **Observability:** an OpenTelemetry span for every tool call and every run, plus alerts on failed runs and on large deltas between estimated and actual savings.
+
+## References
+
+- [FOCUS specification](https://focus.finops.org/focus-specification/): v1.4, ratified June 2026. The dataset uses a subset of its Cost and Usage columns.
+- [AWS: Data Exports for FOCUS 1.0 is generally available](https://aws.amazon.com/blogs/aws-cloud-financial-management/data-exports-for-focus-1-0-is-now-generally-available/). AWS Data Exports now offers CUR 2.0, FOCUS 1.0 and FOCUS 1.2 tables, delivered to S3 ([FAQ](https://aws.amazon.com/cn/aws-cost-management/aws-data-exports/faqs/)).
+- [Microsoft Cost Management updates, April 2025](https://azure.microsoft.com/en-us/blog/microsoft-cost-management-updates-april-2025/): enhanced exports, including a FOCUS dataset, are generally available.

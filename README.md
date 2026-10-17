@@ -21,7 +21,7 @@ question ──▶ agent loop (Claude, tool use)
 
 | Table              | What it is                                                                                                                                          |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `billing`          | Daily cost and usage in the [FOCUS](https://focus.finops.org/) format, the FinOps Foundation's open billing standard that covers both AWS and Azure |
+| `billing`          | Daily cost and usage using a subset of [FOCUS 1.4](https://focus.finops.org/focus-specification/) columns, the FinOps Foundation's open billing standard that covers both AWS and Azure |
 | `resources`        | Inventory: configuration and tags for every resource                                                                                                |
 | `resource_metrics` | Daily utilization (CPU, network, IOPS, Lambda memory), like CloudWatch or Azure Monitor                                                             |
 

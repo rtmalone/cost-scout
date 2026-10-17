@@ -73,7 +73,7 @@ export const TOOLS: Anthropic.Tool[] = [
 
 const TABLE_NOTES: Record<string, string> = {
   billing:
-    'FOCUS 1.x cost and usage data, one row per resource per day. EffectiveCost is the amortized cost to use for savings math.',
+    'Cost and usage data using a subset of FOCUS 1.4 columns, one row per resource per day. EffectiveCost is the amortized cost to use for savings math.',
   resources: 'Inventory snapshot as of the analysis date: configuration (attributes) and tags for every resource.',
   resource_metrics:
     'Daily utilization metrics (long format: metric_name, value, unit). Not every resource has metrics; storage-only resources often have none.',
