@@ -76,8 +76,8 @@ The point is to show the shape of the problem done well, not breadth: safe tool 
 
 ## Phase 3: Write-up
 
-- [ ] README: eval results and a sample finding.
-- [ ] `DEVLOG.md`: what the agent got wrong and how it was caught or fixed, e.g. a decoy it flagged, a pattern it missed, bad savings math. Each fix should be a prompt or tool change, with a before/after eval score.
+- [x] README: eval results (3-run scorecard) and what the misses mean.
+- [x] `DEVLOG.md`: what the agent got wrong and how it was caught or fixed, e.g. a decoy it flagged, a pattern it missed, bad savings math. Each fix should be a prompt or tool change, with a before/after eval score.
 
 ## Phase 4: CI (optional)
 

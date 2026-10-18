@@ -69,15 +69,31 @@ Agents are non-deterministic, so the scorecard shows the mean **and the worst ru
 
 Exit code: 1 if no run could be scored; `pnpm eval --strict` also exits 1 if the worst run misses any target. Otherwise 0.
 
-| Metric           | Mean | Worst run | Target   |
-| ---------------- | ---- | --------- | -------- |
-| Recall           | TBD  | TBD       | ≥ 7/8    |
-| Fully found      | TBD  | TBD       | reported |
-| Precision        | TBD  | TBD       | ≥ 85%    |
-| Decoys flagged   | TBD  | TBD       | 0        |
-| Savings accuracy | TBD  | TBD       | ≥ 75%    |
+### Results
 
-<!-- TODO: paste the 3-run scorecard from `pnpm eval --runs 3` (model, prompt hash, date). -->
+3 runs on `claude-sonnet-5-5`, 2026-10-17 (prompt `1d75835de459`, answer key `dbe2d5c80907`), about 165k tokens per run:
+
+| Metric           | Mean | Worst run | Target   |        |
+| ---------------- | ---- | --------- | -------- | ------ |
+| Recall           | 8/8  | 8/8       | ≥ 7/8    | pass   |
+| Fully found      | 8/8  | 8/8       | reported |        |
+| Precision        | 96%  | 89%       | ≥ 85%    | pass   |
+| Decoys flagged   | 0    | 0         | 0        | pass   |
+| Savings accuracy | 63%  | 50%       | ≥ 75%    | fail   |
+
+**Detection:** every planted problem was found, with all of its resources, in every run. No decoy was flagged in any run.
+
+**Savings:** all 9 misses were conservative, and there were **zero overestimates**. Each conservative estimate came with a stated reason:
+
+- downsizing an idle instance instead of stopping it
+- archiving old snapshots before deleting them
+- subtracting the cost of a final snapshot before deleting a disk
+- shrinking a Lambda to 1 GB rather than 512 MB to protect its run time
+- buying extra gp3 throughput to match gp2's burst speed
+
+For a cost tool, overstating savings is the dangerous error, and it never happened. Conservative estimates go to a human reviewer with their proposed change rather than being counted as accurate. That's a deliberate choice, and it's why this metric reads low.
+
+**Precision:** the one finding that matched nothing (run 1) recommended Savings Plans or Reserved Instances for steady 24/7 production compute and RDS. That's a legitimate FinOps recommendation that the synthetic scenario doesn't model, since it has no discount pricing. It counts against the answer key, but it's a gap in the key rather than an agent error. See [DEVLOG.md](DEVLOG.md).
 
 ## What I'd build next
 
@@ -89,4 +105,4 @@ Exit code: 1 if no run could be scored; `pnpm eval --strict` also exits 1 if the
 
 ## Built agent-first
 
-<!-- TODO: link DEVLOG.md: what the agent got wrong along the way and how it was caught -->
+This project was built by directing coding agents: I wrote the plan, an implementer agent built each phase, and a separate reviewer agent checked its work. Every finding went to me before anything was merged. [DEVLOG.md](DEVLOG.md) records what the agents got wrong along the way, how it was caught, and the decisions that followed.
