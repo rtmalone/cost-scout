@@ -95,6 +95,25 @@ For a cost tool, overstating savings is the dangerous error, and it never happen
 
 **Precision:** the one finding that matched nothing (run 1) recommended Savings Plans or Reserved Instances for steady 24/7 production compute and RDS. That's a legitimate FinOps recommendation that the synthetic scenario doesn't model, since it has no discount pricing. It counts against the answer key, but it's a gap in the key rather than an agent error. See [DEVLOG.md](DEVLOG.md).
 
+### Model comparison
+
+The same eval, 3 runs per model, run on 2026-10-17 with the same prompt and answer key:
+
+| | Sonnet 5.5 (default) | Opus 5.5 | Haiku 4.5 |
+|---|---|---|---|
+| Recall | 8/8 | 8/8 | 0.7/8 (worst 0) |
+| Precision | 96% (worst 89%) | 100% | 33% |
+| Decoys flagged | 0 | 0 | 0 |
+| Savings accuracy | 63% (worst 50%), all conservative | 63% (worst 50%), all conservative | n/a |
+| Runs completed | 3/3 | 3/3 | 0/3 (all hit the 25-turn cap) |
+| Tokens per run | ~165k | ~192k | ~337k |
+| Time per run | ~87 s | ~115 s | ~67 s (capped) |
+
+- **Opus** matched Sonnet on detection and scored exactly the same on savings, with zero overestimates. That suggests the conservative estimates are judgment calls about safer fixes, not a capability limit. It used more tokens, at a higher price per token, and was slower.
+- **Haiku** looked in the right places, but made one tool call per turn even though the prompt says to batch independent queries. It also left all its reporting to the end, so every run hit the turn cap before writing up most of its findings. Even capped, it used about twice as many tokens per run as Sonnet. A model that's cheaper per token isn't automatically cheaper per task.
+
+Sonnet is the default because the evals support it: Opus adds cost without improving results, and Haiku doesn't complete the task within the same limits. Haiku wasn't re-tested with a higher turn cap.
+
 ## What I'd build next
 
 - **Real data:** AWS CUR 2.0 exported to S3 and queried with Athena; Azure cost exports through the same FOCUS schema.

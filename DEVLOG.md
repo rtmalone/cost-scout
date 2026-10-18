@@ -101,3 +101,12 @@ I didn't strip it bare. These are real FinOps heuristics, and the scenario was b
 - Unpriced estimates are checked against the expected range.
 
 The scoring logic is pure and unit-tested, including a test that replays the first live run.
+
+## Choosing the model with evals, not intuition
+
+**What happened:** I chose Sonnet 5.5 as the default on reasoning: the task is bounded, and the first run handled the judgment calls. I then ran the same 3-run eval on Opus 5.5 and Haiku 4.5 to test that choice.
+
+- **Opus:** detection was identical, and savings accuracy was exactly the same (63% mean, 50% worst, all misses conservative). It used more tokens per run (~192k vs. ~165k) at a higher price per token, and was slower. That confirmed the savings misses are judgment calls about safer fixes, not something a bigger model fixes.
+- **Haiku:** it failed every run, but not for lack of insight. It queried the right things (idle instances, the NAT trend, Lambda memory, orphaned storage), but made one tool call per turn despite the prompt telling it to batch independent queries. It also left reporting until the end, so each run hit the 25-turn cap with most findings unwritten. It used about twice Sonnet's tokens per run while doing so.
+
+**Decision:** Sonnet stays the default, now backed by data. I didn't re-test Haiku with a higher turn cap. Even if it finished, the token use already shows that a model that's cheaper per token isn't automatically cheaper per task. The cap and the prompt were tuned around Sonnet's way of working, which is worth remembering if the model ever changes: limits like the turn cap are model-specific settings, not universal ones.
