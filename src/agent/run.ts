@@ -37,6 +37,10 @@ export const DEFAULT_TOKEN_BUDGET = 1_000_000;
 /** Per response. Large enough for a long final summary, small enough for a non-streaming request. */
 export const DEFAULT_MAX_TOKENS = 16_000;
 
+/** What `pnpm scout` asks with no argument, and what every eval run asks. */
+export const DEFAULT_QUESTION =
+  'Find the biggest cost-saving opportunities in this environment. For each, show the evidence, the fix, and how to roll it back.';
+
 /** The one SDK method the loop uses. Tests inject a fake. */
 export interface MessagesClient {
   messages: {

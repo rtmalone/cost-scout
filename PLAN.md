@@ -19,7 +19,7 @@ The point is to show the shape of the problem done well, not breadth: safe tool 
 | ------------- | ---------------------------------------------------- | ----------- |
 | 0. Foundation | Dataset, read-only SQL tools, guardrail tests        | ✅ Done     |
 | 1. Agent loop | Tool-use loop, system prompt, audit logging          | ✅ Done     |
-| 2. Evals      | Score runs against ground truth, compare across runs | ⬜          |
+| 2. Evals      | Score runs against ground truth, compare across runs | 🟡 Built; held-out scenario open |
 | 3. Write-up   | README results, DEVLOG of agent mistakes             | ⬜          |
 | 4. CI         | GitHub Actions: typecheck and tests on every push    | ⬜ Optional |
 
@@ -54,7 +54,7 @@ The point is to show the shape of the problem done well, not breadth: safe tool 
 
 ## Phase 2: Evals
 
-**Build:** `evals/run-evals.ts`
+**Build:** `evals/score.ts` (pure scoring, tested in `test/score.test.ts`), `evals/summary.ts` (aggregation across runs, tested in `test/summary.test.ts`) and `evals/run-evals.ts` (the CLI)
 
 | Metric           | Definition                                                     | Target              |
 | ---------------- | -------------------------------------------------------------- | ------------------- |
@@ -64,11 +64,12 @@ The point is to show the shape of the problem done well, not breadth: safe tool 
 | Savings accuracy | Matched findings whose estimate is within the tolerance        | ≥ 75%               |
 | Coverage         | Share of a planted problem's resources that the agent included | Reported, no target |
 
-- [ ] **Matching:** an agent finding matches a planted problem if their resource IDs overlap. One finding can match several planted problems, as long as it includes all of their resources. Grouping by shared cause and fix is what the prompt asks for. (First live run: the agent grouped the unattached AWS volumes and the Azure disk into one finding.)
-- [ ] **Savings:** keep the tolerance check strict, but report misses where the agent chose a safer fix (e.g. downsize instead of stop, archive before delete) as a separate "conservative estimate" category, not as failures. The scorecard stays honest and explains itself.
-- [ ] **No tuning to the answer key:** a planted problem the agent leaves out by judgment counts as a miss, and the prompt isn't changed just to catch it. Only make prompt changes that would be justified without the answer key; the held-out scenario checks this. (First live run: the agent left out the oversized Lambda as low-value and risky.)
-- [ ] `--runs N`: report the mean and the worst run, because agents are non-deterministic.
-- [ ] Save each run to `evals/results/` to compare prompt and model changes.
+- [x] **Matching (hybrid):** a planted problem is *found* if any finding shares a resource ID with it (recall), and *fully found* if the matching findings together cover at least 50% of its resources (reported alongside recall, no target). One finding can match several planted problems, and several findings can split one. Grouping by shared cause and fix is what the prompt asks for. (First live run: the agent grouped the unattached AWS volumes and the Azure disk into one finding.) This replaced an earlier "must include all of its resources" rule, which marked partial finds as misses; plain overlap alone, though, let one sloppy finding chain unrelated problems into a single savings total, hence the 50% rule for pricing below.
+- [x] **Savings:** a finding is priced against a planted problem only if that finding alone covers at least 50% of the problem's resources. Units are connected components of those edges: summed estimates vs summed expected savings, at the unit's largest tolerance, so a grouped or split finding is counted once. A problem found only through thin overlaps is reported as "found, not priced"; units of 3+ problems are flagged as merged; a non-finite estimate is an overestimate. Keep the tolerance check strict, but report misses where the agent chose a safer fix (e.g. downsize instead of stop, archive before delete) as a separate "conservative estimate" category, not as failures. The scorecard stays honest and explains itself.
+- [x] **No tuning to the answer key:** a planted problem the agent leaves out by judgment counts as a miss, and the prompt isn't changed just to catch it. Only make prompt changes that would be justified without the answer key; the held-out scenario checks this. (First live run: the agent left out the oversized Lambda as low-value and risky.)
+- [x] `--runs N` (plus `--model`, `--concurrency`, `--strict`): report the mean and the worst run, because agents are non-deterministic. Per planted problem, the hit rate across runs. Infrastructure failures (API errors, crashes) are listed but left out of the metrics; runs the agent cut short or that were aborted are scored and flagged. Exit 1 when no run is scoreable, and with `--strict` also when the worst run misses a target.
+- [x] Save results to `evals/results/` (gitignored) after every run, to compare prompt and model changes, tagged with a hash of the system prompt, tool definitions and question, plus a hash of the answer key.
+- [x] Smoke test, 1 run (before the hybrid rule; it scores the same under it): recall 7/8 (missed gp2-to-gp3, found the Lambda this time), precision 6/6, 0 decoys, savings 5/6 within (idle-ec2 conservative: downsize instead of stop). About 149k tokens.
 - [ ] Held-out second scenario (different waste and decoys) to check the prompt generalizes.
 
 **Done when:** one command produces a scorecard that can go in the README.
@@ -93,6 +94,7 @@ The point is to show the shape of the problem done well, not breadth: safe tool 
 | Decoys alongside the waste                                     | Recall alone rewards an agent that flags everything. Decoys measure whether it checks before it accuses.                                                                                                                                                                                                                                                                                |
 | DuckDB, read-only                                              | Fast local analytics with the same SQL shape as Athena, and safety enforced by the engine, not the prompt.                                                                                                                                                                                                                                                                              |
 | No tool that executes changes                                  | Safety by construction: the agent can't do what it has no tool for.                                                                                                                                                                                                                                                                                                                     |
+| Sonnet 5.5 as the default model | The task is bounded: three tools, structured data, clear pricing rules, a fixed output format, about 7 turns per run. The first live run handled the judgment calls (7 of 8 found, 0 decoys, 0 false findings), so there's no evidence yet that a larger model's extra cost is justified. Check with `pnpm eval --model claude-opus-5-5`, and revisit if the evals show a gap. |
 | Findings require a rollback and a risk level                   | Forces the agent to reason about what could go wrong, not just what to delete.                                                                                                                                                                                                                                                                                                          |
 
 ## Risks

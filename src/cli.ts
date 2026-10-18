@@ -8,12 +8,10 @@ import 'dotenv/config';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { DB_FILENAME, DEFAULT_DATA_DIR } from './data/generate.ts';
-import { runAgent } from './agent/run.ts';
+import { DEFAULT_QUESTION, runAgent } from './agent/run.ts';
 import { ReadOnlyDb } from './tools/db.ts';
 
-const question =
-  process.argv.slice(2).join(' ') ||
-  'Find the biggest cost-saving opportunities in this environment. For each, show the evidence, the fix, and how to roll it back.';
+const question = process.argv.slice(2).join(' ') || DEFAULT_QUESTION;
 
 const dbPath = join(DEFAULT_DATA_DIR, DB_FILENAME);
 if (!existsSync(dbPath)) {
