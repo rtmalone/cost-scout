@@ -18,7 +18,7 @@ The point is to show the shape of the problem done well, not breadth: safe tool 
 | Phase         | Scope                                                | Status      |
 | ------------- | ---------------------------------------------------- | ----------- |
 | 0. Foundation | Dataset, read-only SQL tools, guardrail tests        | ✅ Done     |
-| 1. Agent loop | Tool-use loop, system prompt, audit logging          | 🟨 Built, awaiting a live run |
+| 1. Agent loop | Tool-use loop, system prompt, audit logging          | ✅ Done     |
 | 2. Evals      | Score runs against ground truth, compare across runs | ⬜          |
 | 3. Write-up   | README results, DEVLOG of agent mistakes             | ⬜          |
 | 4. CI         | GitHub Actions: typecheck and tests on every push    | ⬜ Optional |
@@ -48,7 +48,7 @@ The point is to show the shape of the problem done well, not breadth: safe tool 
 - [x] Prompt caching on the system prompt and tool definitions (one breakpoint on the system block covers both), plus automatic caching of the growing conversation. History is append-only.
 - [x] Log every tool call (name, input including SQL and purpose, row count or error, duration) via `onToolCall` and in `AgentResult.toolCalls`. Usage sums input, output, cache-read and cache-write tokens.
 - [x] Thinking and effort are optional pass-throughs, not sent by default, so the model's own default applies. The SDK types accept `enabled`, `disabled`, `between_tools` and `adaptive`; which a given model accepts, and its default, are unverified (check `client.models.retrieve(model)` capabilities or a live call). Thinking blocks are passed back unchanged.
-- [ ] Live run: `pnpm scout` against the API.
+- [x] Live run: `pnpm scout` against the API. First run: completed in 7 turns and 17 tool calls; 6 findings covering 7 of 8 planted problems, 0 decoys flagged, 0 false findings. About 126k tokens, mostly cache reads (31k cache write on turn 1, 84k cache read), so caching works and the 1M budget is far off.
 
 **Done when:** `pnpm scout` produces findings with evidence, a change, a rollback and a risk level.
 
@@ -64,7 +64,9 @@ The point is to show the shape of the problem done well, not breadth: safe tool 
 | Savings accuracy | Matched findings whose estimate is within the tolerance        | ≥ 75%               |
 | Coverage         | Share of a planted problem's resources that the agent included | Reported, no target |
 
-- [ ] A match is any resource-ID overlap; each agent finding matches at most one planted problem.
+- [ ] **Matching:** an agent finding matches a planted problem if their resource IDs overlap. One finding can match several planted problems, as long as it includes all of their resources. Grouping by shared cause and fix is what the prompt asks for. (First live run: the agent grouped the unattached AWS volumes and the Azure disk into one finding.)
+- [ ] **Savings:** keep the tolerance check strict, but report misses where the agent chose a safer fix (e.g. downsize instead of stop, archive before delete) as a separate "conservative estimate" category, not as failures. The scorecard stays honest and explains itself.
+- [ ] **No tuning to the answer key:** a planted problem the agent leaves out by judgment counts as a miss, and the prompt isn't changed just to catch it. Only make prompt changes that would be justified without the answer key; the held-out scenario checks this. (First live run: the agent left out the oversized Lambda as low-value and risky.)
 - [ ] `--runs N`: report the mean and the worst run, because agents are non-deterministic.
 - [ ] Save each run to `evals/results/` to compare prompt and model changes.
 - [ ] Held-out second scenario (different waste and decoys) to check the prompt generalizes.
