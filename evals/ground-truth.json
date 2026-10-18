@@ -7,7 +7,7 @@
   "findings": [
     {
       "id": "gp2-to-gp3",
-      "category": "storage-modernization",
+      "category": "storage",
       "title": "Migrate attached gp2 volumes to gp3",
       "resource_ids": [
         "vol-0b2c3d4e5f6a70021",
@@ -18,7 +18,7 @@
     },
     {
       "id": "idle-ec2",
-      "category": "idle-compute",
+      "category": "compute",
       "title": "Idle m5.2xlarge running 24/7",
       "resource_ids": [
         "i-0e8f7a6b5c4d30031"
@@ -28,7 +28,7 @@
     },
     {
       "id": "unattached-ebs",
-      "category": "unattached-storage",
+      "category": "storage",
       "title": "Unattached EBS volumes left behind by terminated instances",
       "resource_ids": [
         "vol-0f1e2d3c4b5a60041",
@@ -39,7 +39,7 @@
     },
     {
       "id": "old-snapshots",
-      "category": "stale-snapshot",
+      "category": "storage",
       "title": "Year-old snapshots of volumes that no longer exist",
       "resource_ids": [
         "snap-0c1d2e3f4a5b60001",
@@ -60,7 +60,7 @@
     },
     {
       "id": "oversized-lambda",
-      "category": "oversized-function",
+      "category": "compute",
       "title": "Lambda allocated 3 GB but never uses more than ~210 MB",
       "resource_ids": [
         "arn:aws:lambda:us-east-1:111111111111:function:etl-transform"
@@ -70,7 +70,7 @@
     },
     {
       "id": "nat-spike",
-      "category": "cost-anomaly",
+      "category": "network",
       "title": "NAT Gateway data processing jumped ~14x in the last two weeks",
       "resource_ids": [
         "nat-0a9b8c7d6e5f40051"
@@ -80,7 +80,7 @@
     },
     {
       "id": "dev-always-on",
-      "category": "schedule-non-prod",
+      "category": "compute",
       "title": "Dev instances run 24/7 but are only used during business hours",
       "resource_ids": [
         "i-0a2b3c4d5e6f70061",
@@ -91,7 +91,7 @@
     },
     {
       "id": "azure-unattached-disk",
-      "category": "unattached-storage",
+      "category": "storage",
       "title": "Unattached 1 TiB Premium SSD managed disk",
       "resource_ids": [
         "/subscriptions/sub-3f9c2a71/resourceGroups/rg-analytics/providers/Microsoft.Compute/disks/analytics-scratch-disk"

@@ -18,7 +18,7 @@ The point is to show the shape of the problem done well, not breadth: safe tool 
 | Phase         | Scope                                                | Status      |
 | ------------- | ---------------------------------------------------- | ----------- |
 | 0. Foundation | Dataset, read-only SQL tools, guardrail tests        | ✅ Done     |
-| 1. Agent loop | Tool-use loop, system prompt, audit logging          | ⬜ Next     |
+| 1. Agent loop | Tool-use loop, system prompt, audit logging          | 🟨 Built, awaiting a live run |
 | 2. Evals      | Score runs against ground truth, compare across runs | ⬜          |
 | 3. Write-up   | README results, DEVLOG of agent mistakes             | ⬜          |
 | 4. CI         | GitHub Actions: typecheck and tests on every push    | ⬜ Optional |
@@ -29,22 +29,26 @@ The point is to show the shape of the problem done well, not breadth: safe tool 
 - Three tables: `billing` (FOCUS), `resources` (inventory), `resource_metrics` (daily utilization).
 - 8 planted problems (~$2,340/month) and 5 decoys, defined in `src/data/scenario.ts`. Ground truth is generated from the same specs.
 - Tools: `describe_schema`, `run_sql`, `report_finding`.
-- Guardrails, with 15 tests: read-only database, no file access, a single SELECT checked by DuckDB's own parser, row/size/time limits, and hallucinated resource IDs rejected.
+- Guardrails, with 16 tests: read-only database, no file access, a single SELECT checked by DuckDB's own parser, row/size/time limits, and hallucinated resource IDs rejected. Each query gets its own connection, so a timeout in one parallel tool call can't cancel another.
 
 ## Phase 1: Agent loop
 
-**Build:** `src/agent/run.ts`
+**Build:** `src/agent/run.ts`, tested in `test/agent.test.ts` with a fake client (no network, no API key)
 
-- [ ] Tool-use loop on the Anthropic SDK (pattern from Cortex): call the model, run the tool calls in parallel, send the results back, repeat until done.
-- [ ] Stop conditions: the model finishes, a turn cap (default 25), or a token budget.
-- [ ] System prompt covering:
-  - **How to investigate:** schema first; aggregate in SQL; check utilization before calling anything idle; look at time patterns (business hours vs. off hours, recent vs. baseline).
+- [x] Tool-use loop on the Anthropic SDK: call the model, run the tool calls in parallel, send all the results back in one message in order, repeat until done. Hand-written rather than the SDK's beta `toolRunner`, for the budget, audit and stop-reason control below.
+- [x] Stop conditions: the model finishes, a turn cap (default 25), a token budget (default 1M tokens across turns), or an `AbortSignal` (Ctrl-C in the CLI). Every limit ends gracefully with the findings so far and a `stopReason`.
+- [x] Every `stop_reason` handled on purpose: `tool_use` runs tools; `max_tokens` runs the complete tool calls and answers a cut-off final call with an error instead of running it; `pause_turn` resumes; `refusal` and `model_context_window_exceeded` stop without running that turn's tools; API errors (after SDK retries) stop with `api_error`.
+- [x] System prompt covering:
+  - **How to investigate:** schema first; aggregate in SQL; find where the money goes; join cost with utilization and configuration before judging anything; consider change over time, not just averages; look for evidence a cost is justified and leave out mixed cases; judge age against the analysis date.
   - **What counts as evidence:** specific numbers from queries, not assumptions.
   - **How to price savings:** `EffectiveCost`, a 30-day month, and the stated assumptions.
   - **Grouping:** one finding per root cause and fix, not one per resource.
   - **Safety:** state the risk, the rollback, and who should approve.
-- [ ] Prompt caching on the system prompt and tool definitions.
-- [ ] Log every tool call (SQL, purpose, row count, errors) so a run can be audited.
+  - General guidance for an unknown account, not a list of waste patterns. The scenario was built from common FinOps waste patterns, so some overlap with any competent guidance is unavoidable; a held-out second scenario (Phase 2) will test whether the prompt generalizes.
+- [x] Prompt caching on the system prompt and tool definitions (one breakpoint on the system block covers both), plus automatic caching of the growing conversation. History is append-only.
+- [x] Log every tool call (name, input including SQL and purpose, row count or error, duration) via `onToolCall` and in `AgentResult.toolCalls`. Usage sums input, output, cache-read and cache-write tokens.
+- [x] Thinking and effort are optional pass-throughs, not sent by default, so the model's own default applies. The SDK types accept `enabled`, `disabled`, `between_tools` and `adaptive`; which a given model accepts, and its default, are unverified (check `client.models.retrieve(model)` capabilities or a live call). Thinking blocks are passed back unchanged.
+- [ ] Live run: `pnpm scout` against the API.
 
 **Done when:** `pnpm scout` produces findings with evidence, a change, a rollback and a risk level.
 
@@ -63,6 +67,7 @@ The point is to show the shape of the problem done well, not breadth: safe tool 
 - [ ] A match is any resource-ID overlap; each agent finding matches at most one planted problem.
 - [ ] `--runs N`: report the mean and the worst run, because agents are non-deterministic.
 - [ ] Save each run to `evals/results/` to compare prompt and model changes.
+- [ ] Held-out second scenario (different waste and decoys) to check the prompt generalizes.
 
 **Done when:** one command produces a scorecard that can go in the README.
 

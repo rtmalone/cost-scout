@@ -1,5 +1,7 @@
 /**
  * Usage: pnpm scout ["question"]
+ *
+ * Ctrl-C stops the run gracefully and prints the findings recorded so far.
  */
 
 import 'dotenv/config';
@@ -24,13 +26,19 @@ if (!process.env.ANTHROPIC_API_KEY) {
 }
 
 const db = await ReadOnlyDb.open(dbPath);
+const abort = new AbortController();
+process.once('SIGINT', () => {
+  console.error('\nStopping. Press Ctrl-C again to quit immediately.');
+  abort.abort();
+});
 try {
   const result = await runAgent(question, {
     db,
     model: process.env.COST_SCOUT_MODEL ?? 'claude-sonnet-5-5',
-    onToolCall: ({ name, input, isError }) => {
+    signal: abort.signal,
+    onToolCall: ({ name, input, isError, durationMs, summary }) => {
       const detail = name === 'run_sql' ? ` ${(input as { purpose?: string }).purpose ?? ''}` : '';
-      console.error(`  ${isError ? '✗' : '→'} ${name}${detail}`);
+      console.error(`  ${isError ? '✗' : '→'} ${name}${detail}  [${summary}, ${durationMs} ms]`);
     },
   });
 
@@ -45,7 +53,13 @@ try {
     console.log(`   approval:  ${f.approval_notes}\n`);
   }
   if (result.summary) console.log(result.summary);
-  console.error(`\n${result.turns} turns, ${result.usage.inputTokens} in / ${result.usage.outputTokens} out tokens`);
+  const { inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens } = result.usage;
+  console.error(
+    `\nStopped: ${result.stopReason}${result.stopDetail ? ` (${result.stopDetail})` : ''}` +
+      `\n${result.turns} turns, ${result.toolCalls.length} tool calls` +
+      `\ntokens: ${inputTokens} in, ${outputTokens} out, ${cacheReadTokens} cache read, ${cacheWriteTokens} cache write`,
+  );
+  if (result.stopReason !== 'completed') process.exitCode = 1;
 } finally {
   db.close();
 }

@@ -4,16 +4,8 @@
  * (which score them against ground truth).
  */
 
-export const FINDING_CATEGORIES = [
-  'idle-compute',
-  'unattached-storage',
-  'stale-snapshot',
-  'oversized-function',
-  'storage-modernization',
-  'schedule-non-prod',
-  'cost-anomaly',
-  'other',
-] as const;
+/** Coarse service areas. Deliberately not waste patterns, so the schema doesn't hint at what to look for. */
+export const FINDING_CATEGORIES = ['compute', 'storage', 'network', 'database', 'other'] as const;
 
 export type FindingCategory = (typeof FINDING_CATEGORIES)[number];
 

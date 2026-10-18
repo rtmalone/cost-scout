@@ -70,12 +70,32 @@ describe('ReadOnlyDb guardrails', () => {
     assert.equal(r.ok, false);
     assert.match(!r.ok ? r.error : '', /cancelled/);
   });
+
+  it('cancels only the query that timed out when queries run in parallel', { timeout: 15_000 }, async () => {
+    // The quick query starts first and is still running when the long query's 200 ms timer fires.
+    // With a shared connection that interrupt hit the quick query, and the long one ran to the end.
+    const timed = async (sql: string, timeoutMs: number) => {
+      const started = performance.now();
+      const result = await db.query(sql, { maxRows: 10, timeoutMs, maxChars: 1000 });
+      return { result, ms: performance.now() - started };
+    };
+    const [quick, long] = await Promise.all([
+      timed('SELECT sum(a.range * b.range) AS s FROM range(30000) a, range(30000) b', 60_000),
+      timed('SELECT sum(a.range * b.range) AS s FROM range(100000) a, range(100000) b', 200),
+    ]);
+
+    assert.ok(quick.ms > 200, `the quick query must outlast the other's timeout to test anything (took ${Math.round(quick.ms)} ms)`);
+    assert.equal(quick.result.ok, true, !quick.result.ok ? quick.result.error : '');
+    assert.equal(long.result.ok, false, 'the long query should have been cancelled');
+    assert.match(!long.result.ok ? long.result.error : '', /200 ms and was cancelled/);
+    assert.ok(long.ms < 3000, `cancelled within 3 s (took ${Math.round(long.ms)} ms)`);
+  });
 });
 
 describe('report_finding', () => {
   const valid = {
     title: 'Idle instance',
-    category: 'idle-compute',
+    category: 'compute',
     resource_ids: ['i-0e8f7a6b5c4d30031'],
     evidence: 'CPU averaged 1.2% over 90 days',
     estimated_monthly_savings_usd: 276.48,

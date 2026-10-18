@@ -15,8 +15,11 @@ export interface ToolContext {
 }
 
 export interface ToolOutcome {
+  /** What the model sees. */
   content: string;
   isError: boolean;
+  /** One line for the audit log, e.g. "12 rows" or "Recorded finding #2: ...". */
+  summary?: string;
 }
 
 export const TOOLS: Anthropic.Tool[] = [
@@ -100,7 +103,7 @@ async function describeSchema(ctx: ToolContext): Promise<ToolOutcome> {
       '## metric names\n' + metrics.rows.map((m) => `  ${m.metric_name} (${m.unit}, ${m.resources} resources)`).join('\n'),
     );
   }
-  return { content: sections.join('\n\n'), isError: false };
+  return { content: sections.join('\n\n'), isError: false, summary: `${Object.keys(TABLE_NOTES).length} tables described` };
 }
 
 async function runSql(input: { sql?: unknown }, ctx: ToolContext): Promise<ToolOutcome> {
@@ -117,6 +120,7 @@ async function runSql(input: { sql?: unknown }, ctx: ToolContext): Promise<ToolO
       truncated: result.truncated,
     }),
     isError: false,
+    summary: `${result.rowCount} rows${result.truncated ? ' (truncated)' : ''}`,
   };
 }
 

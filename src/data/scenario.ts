@@ -46,6 +46,7 @@ export interface Account {
 export interface WasteTag {
   /** Resources that share an id form one ground-truth finding. */
   id: string;
+  /** Informational only: the evals match findings on resource-ID overlap, not category. */
   category: FindingCategory;
   title: string;
   /** This resource's share of the finding's monthly savings. */
@@ -328,7 +329,7 @@ const kafkaVolumes = [1, 2].map((n) =>
       tags: prodTags('events', 'data'),
       waste: {
         id: 'gp2-to-gp3',
-        category: 'storage-modernization',
+        category: 'storage',
         title: 'Migrate attached gp2 volumes to gp3',
         monthlySavingsUsd: 1000 * (0.1 - 0.08),
         tolerancePct: 15,
@@ -350,7 +351,7 @@ const idleWorker = ec2(
     tags: prodTags('data-export', 'data'),
     waste: {
       id: 'idle-ec2',
-      category: 'idle-compute',
+      category: 'compute',
       title: 'Idle m5.2xlarge running 24/7',
       monthlySavingsUsd: monthly(0.384 * 24),
       tolerancePct: 15,
@@ -401,7 +402,7 @@ const unattachedVolumes = [
       attributes: { last_attached_instance: last, last_attached_instance_state: 'terminated' },
       waste: {
         id: 'unattached-ebs',
-        category: 'unattached-storage',
+        category: 'storage',
         title: 'Unattached EBS volumes left behind by terminated instances',
         monthlySavingsUsd: size * 0.1,
         tolerancePct: 10,
@@ -427,7 +428,7 @@ const oldSnapshots = Array.from({ length: 12 }, (_, i) => {
       attributes: { source_volume_exists: false },
       waste: {
         id: 'old-snapshots',
-        category: 'stale-snapshot',
+        category: 'storage',
         title: 'Year-old snapshots of volumes that no longer exist',
         monthlySavingsUsd: 200 * 0.05,
         tolerancePct: 10,
@@ -466,7 +467,7 @@ const etlLambda = lambda(
     tags: prodTags('etl', 'data'),
     waste: {
       id: 'oversized-lambda',
-      category: 'oversized-function',
+      category: 'compute',
       title: 'Lambda allocated 3 GB but never uses more than ~210 MB',
       // Right-sized to 512 MB, assuming duration holds (it may not — hence the wide tolerance).
       monthlySavingsUsd:
@@ -528,7 +529,7 @@ const natGateway: ResourceSpec = {
   },
   waste: {
     id: 'nat-spike',
-    category: 'cost-anomaly',
+    category: 'network',
     title: 'NAT Gateway data processing jumped ~14x in the last two weeks',
     monthlySavingsUsd: monthly((NAT_SPIKE_GB - NAT_BASELINE_GB) * NAT_PRICE_PER_GB),
     tolerancePct: 40,
@@ -568,7 +569,7 @@ const devAlwaysOn = [
       tags: devTags(app),
       waste: {
         id: 'dev-always-on',
-        category: 'schedule-non-prod',
+        category: 'compute',
         title: 'Dev instances run 24/7 but are only used during business hours',
         monthlySavingsUsd: monthly(0.34 * 24) * SCHEDULE_SAVINGS_FRACTION,
         tolerancePct: 30,
@@ -642,7 +643,7 @@ const azureScratchDisk = azureDisk(
     tags: { env: 'prod', app: 'analytics', team: 'data' },
     waste: {
       id: 'azure-unattached-disk',
-      category: 'unattached-storage',
+      category: 'storage',
       title: 'Unattached 1 TiB Premium SSD managed disk',
       monthlySavingsUsd: 1024 * 0.132,
       tolerancePct: 10,
