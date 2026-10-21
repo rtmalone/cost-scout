@@ -4,6 +4,10 @@ An agent that analyzes cloud billing data, finds cost waste, and proposes fixes,
 
 See [PLAN.md](PLAN.md) for scope, status, eval targets, and design decisions.
 
+![The cost-scout web UI after a real run: the question and the timing chart of model turns and queries on the left, the proposed savings, a finding card and the agent's summary on the right](docs/images/web-ui.png)
+
+_A real run of `pnpm ui` on "Is anything in the Azure subscription idle?": 5 turns, 4 queries, one finding._
+
 ## How it works
 
 ```mermaid
@@ -16,8 +20,12 @@ flowchart LR
     gen --> parquet["data/parquet/*.parquet<br/>same tables, for other tools"]
     gen --> truth["evals/ground-truth.json<br/>answer key"]
 
-    subgraph scout ["pnpm scout"]
-        question([question]) --> loop["agent loop<br/>run.ts"]
+    cli(["pnpm scout<br/>question in, findings to the terminal"]) --> loop
+    browser(["browser<br/>question, timing chart, finding cards"]) <-->|"POST /api/run<br/>events streamed back"| server["pnpm ui<br/>local server on 127.0.0.1"]
+    server --> loop
+
+    subgraph agent ["the agent: same loop for the CLI and the UI"]
+        loop["agent loop<br/>run.ts"]
         loop <-->|"messages ⇄ tool calls"| claude["Claude API"]
         loop --> describe["describe_schema<br/>what data exists"]
         loop --> sql["run_sql<br/>one read-only SELECT"]
@@ -38,7 +46,7 @@ flowchart LR
     score --> results["evals/results/*.json"]
 ```
 
-`pnpm generate` builds the dataset and the answer key from one deterministic scenario. `pnpm scout` runs the agent: Claude decides which tools to call, and every tool reads the database without changing it. `pnpm eval` runs the agent several times and scores its findings against the answer key, which the agent never sees.
+`pnpm generate` builds the dataset and the answer key from one deterministic scenario. `pnpm scout` runs the agent in the terminal, and `pnpm ui` runs the same agent behind a local web page: Claude decides which tools to call, and every tool reads the database without changing it. `pnpm eval` runs the agent several times and scores its findings against the answer key, which the agent never sees.
 
 **Data.** Three tables in DuckDB (also exported as Parquet):
 
@@ -62,6 +70,13 @@ The agent runs against data it can only read, enforced in layers:
 4. Results are **capped** by rows and size, and slow queries are **cancelled**.
 5. `report_finding` **rejects resource IDs that don't exist**, which catches a common agent failure: confidently citing something it made up.
 
+The web UI adds a local server, guarded the same way:
+
+- It listens on **127.0.0.1 only**, and the **API key never leaves the server**: the page only sees the run's events.
+- It accepts requests only from **localhost**, with a **JSON content type**. Another website open in the same browser can't start a run on your key, and a hostname that resolves to your machine (DNS rebinding) is turned away too.
+- It runs **one run at a time**, and **closing the tab aborts the run**, so a forgotten page doesn't keep spending tokens.
+- Everything the model wrote (titles, evidence, SQL, the summary) is shown as **plain text**, never as HTML, because it's derived from data the agent read.
+
 All of this is covered by tests (`pnpm test`).
 
 ## Run it
@@ -76,7 +91,12 @@ pnpm ui                     # the same agent in a local web page
 pnpm eval                   # score it against the planted problems
 ```
 
-`pnpm ui` serves the page at http://127.0.0.1:4317. It runs live with your key, one run at a time, and closing the tab stops the run.
+There are two ways to run the agent. Both use the same loop, prompt, tools and limits, and the same model (`COST_SCOUT_MODEL`, default `claude-sonnet-5-5`).
+
+- **CLI (`pnpm scout`)** prints each tool call as it runs, then the findings and the summary. Use it for scripting, quick runs, or keeping a run as text.
+- **Web UI (`pnpm ui`)** is for watching a run and reading the findings. It builds the page and serves it at http://127.0.0.1:4317. You type or pick a question, watch each turn and its queries on a timing chart, and read the findings as cards with tabs for the change, evidence, rollback and approval. Runs are live with your key, about 165k tokens each with Sonnet. The server allows one at a time, and Stop or closing the tab ends the run.
+
+### CLI questions
 
 With no argument, `pnpm scout` asks the default question: find the biggest cost-saving opportunities, with the evidence, fix and rollback for each. To focus a run, pass your own question in quotes:
 
