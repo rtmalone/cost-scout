@@ -10,7 +10,7 @@ The point is to show the shape of the problem done well, not breadth: safe tool 
 
 - Executing changes. The agent proposes; a human approves and applies.
 - Real cloud accounts. The data is synthetic so it's reproducible and the evals have ground truth.
-- A UI. The CLI is the interface until the agent and evals are solid.
+- A UI: no longer a non-goal. It was added on 2026-10-20, once the evals were in place; `pnpm ui` runs the same agent in a local web page ([design](docs/superpowers/specs/2026-10-20-web-ui-design.md)).
 - Cloud deployment. See [Later](#later-production-shape).
 
 ## Status

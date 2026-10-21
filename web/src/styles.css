@@ -17,6 +17,7 @@
   --risk-medium: #ebcb8b; /* nord13 */
   --risk-high: #bf616a; /* nord11 */
   --error: #bf616a; /* nord11 */
+  --finding-outline: #6f8f58; /* darker green ring on a finding tick */
   --font-body: 'Manrope', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
@@ -369,4 +370,221 @@ button {
   line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* Work card: status line and timing chart */
+.work-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.now {
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.now.live::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--thinking);
+  margin-right: 8px;
+  animation: pulse 1.2s infinite;
+}
+
+.clock {
+  font: 400 11px var(--font-mono);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.turn {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 6px 0;
+}
+
+.turn-n {
+  font: 400 10px var(--font-mono);
+  color: var(--text-2);
+  padding-top: 1px;
+}
+
+.track {
+  position: relative;
+  height: 12px;
+}
+
+.think {
+  position: absolute;
+  top: 0;
+  height: 12px;
+  min-width: 4px;
+  border-radius: 6px;
+  background: var(--thinking);
+}
+
+.think.live {
+  background: repeating-linear-gradient(90deg, var(--thinking) 0 8px, rgba(136, 192, 208, 0.4) 8px 16px);
+  background-size: 32px 12px;
+  animation: slide 1s linear infinite;
+}
+
+.tick {
+  position: absolute;
+  top: -2px;
+  width: 7px;
+  height: 16px;
+  border-radius: 3px;
+  background: var(--query);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.tick-finding {
+  background: var(--finding);
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 3px var(--finding-outline);
+}
+
+.say {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  font-style: italic;
+  color: var(--text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.calls {
+  margin-top: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.call {
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font-size: 11.5px;
+  color: var(--text);
+  padding: 3px 9px 3px 8px;
+  border-radius: 6px;
+  background: rgba(208, 135, 112, 0.14);
+  border-left: 3px solid var(--query);
+  overflow-wrap: anywhere;
+}
+
+.call-finding {
+  background: rgba(163, 190, 140, 0.28);
+  border-left-color: var(--finding);
+  font-weight: 700;
+}
+
+.call-error {
+  background: rgba(191, 97, 106, 0.14);
+  border-left-color: var(--error);
+}
+
+.call-result {
+  margin-left: 4px;
+  font: 400 10px var(--font-mono);
+  color: var(--text-2);
+}
+
+.call-detail {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--surface);
+  border-left: 3px solid var(--query);
+  font: 400 10.5px/1.5 var(--font-mono);
+  color: var(--text-2);
+}
+
+.detail-finding {
+  border-left-color: var(--finding);
+}
+
+.detail-error {
+  border-left-color: var(--error);
+}
+
+.call-detail pre {
+  margin: 0 0 4px;
+  font: inherit;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.axis {
+  position: relative;
+  height: 20px;
+  margin: 8px 0 0 54px;
+  border-top: 1px solid var(--text-2);
+  font: 400 10px var(--font-mono);
+  color: var(--text-2);
+}
+
+.axis span {
+  position: absolute;
+  top: 6px;
+  transform: translateX(-50%);
+}
+
+.axis span:first-child {
+  transform: none;
+}
+
+.legend {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.swatch {
+  display: inline-block;
+  width: 7px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+.swatch-thinking {
+  width: 16px;
+  background: var(--thinking);
+}
+
+.swatch-query {
+  background: var(--query);
+}
+
+.swatch-finding {
+  background: var(--finding);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes slide {
+  to {
+    background-position: 32px 0;
+  }
 }

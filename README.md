@@ -72,8 +72,11 @@ cp .env.example .env        # add ANTHROPIC_API_KEY
 pnpm generate               # build the dataset and the eval answer key
 pnpm test                   # guardrail tests
 pnpm scout                  # run the agent
+pnpm ui                     # the same agent in a local web page
 pnpm eval                   # score it against the planted problems
 ```
+
+`pnpm ui` serves the page at http://127.0.0.1:4317. It runs live with your key, one run at a time, and closing the tab stops the run.
 
 With no argument, `pnpm scout` asks the default question: find the biggest cost-saving opportunities, with the evidence, fix and rollback for each. To focus a run, pass your own question in quotes:
 
