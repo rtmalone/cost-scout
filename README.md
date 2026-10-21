@@ -75,6 +75,16 @@ pnpm scout                  # run the agent
 pnpm eval                   # score it against the planted problems
 ```
 
+With no argument, `pnpm scout` asks the default question: find the biggest cost-saving opportunities, with the evidence, fix and rollback for each. To focus a run, pass your own question in quotes:
+
+```bash
+pnpm scout "Which storage costs could we cut?"
+pnpm scout "Is anything in the Azure subscription idle?"
+pnpm scout "Are any Lambda functions over-provisioned?"
+```
+
+Findings print to the terminal and aren't saved; redirect the output (`pnpm scout > run.txt`) to keep a run.
+
 ## Evals
 
 `pnpm eval --runs 3` runs the agent three times and scores each run against the answer key (`evals/ground-truth.json`). The agent never sees the answer key. Scoring rules are in [`evals/score.ts`](evals/score.ts):
