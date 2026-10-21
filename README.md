@@ -6,24 +6,47 @@ See [PLAN.md](PLAN.md) for scope, status, eval targets, and design decisions.
 
 ## How it works
 
+```mermaid
+flowchart LR
+    subgraph generate ["pnpm generate"]
+        scenario["scenario.ts<br/>resources, planted problems, decoys"] --> gen["generate.ts<br/>fixed seed"]
+    end
+
+    gen --> db[("cost-scout.duckdb<br/>billing · resources · resource_metrics")]
+    gen --> parquet["data/parquet/*.parquet<br/>same tables, for other tools"]
+    gen --> truth["evals/ground-truth.json<br/>answer key"]
+
+    subgraph scout ["pnpm scout"]
+        question([question]) --> loop["agent loop<br/>run.ts"]
+        loop <-->|"messages ⇄ tool calls"| claude["Claude API"]
+        loop --> describe["describe_schema<br/>what data exists"]
+        loop --> sql["run_sql<br/>one read-only SELECT"]
+        loop --> report["report_finding<br/>evidence, savings, change, rollback, risk"]
+    end
+
+    describe -->|read only| db
+    sql -->|read only| db
+    report -->|"resource IDs must exist"| db
+    report --> findings["findings<br/>for human review"]
+
+    subgraph eval ["pnpm eval"]
+        score["score.ts<br/>recall, precision, decoys, savings"]
+    end
+
+    findings --> score
+    truth --> score
+    score --> results["evals/results/*.json"]
 ```
-question ──▶ agent loop (Claude, tool use)
-               │
-               ├─ describe_schema   what data exists
-               ├─ run_sql           read-only DuckDB queries over FOCUS billing + utilization
-               └─ report_finding    structured finding: evidence, savings, change, rollback, risk
-                                       │
-                                       ▼
-                               findings for human review
-```
+
+`pnpm generate` builds the dataset and the answer key from one deterministic scenario. `pnpm scout` runs the agent: Claude decides which tools to call, and every tool reads the database without changing it. `pnpm eval` runs the agent several times and scores its findings against the answer key, which the agent never sees.
 
 **Data.** Three tables in DuckDB (also exported as Parquet):
 
-| Table              | What it is                                                                                                                                          |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Table              | What it is                                                                                                                                                                              |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `billing`          | Daily cost and usage using a subset of [FOCUS 1.4](https://focus.finops.org/focus-specification/) columns, the FinOps Foundation's open billing standard that covers both AWS and Azure |
-| `resources`        | Inventory: configuration and tags for every resource                                                                                                |
-| `resource_metrics` | Daily utilization (CPU, network, IOPS, Lambda memory), like CloudWatch or Azure Monitor                                                             |
+| `resources`        | Inventory: configuration and tags for every resource                                                                                                                                    |
+| `resource_metrics` | Daily utilization (CPU, network, IOPS, Lambda memory), like CloudWatch or Azure Monitor                                                                                                 |
 
 Billing alone can't tell you a resource is idle, so the agent has to join cost with utilization, the same way it would in a real environment.
 
@@ -63,7 +86,7 @@ pnpm eval                   # score it against the planted problems
 - **Savings accuracy:** a finding is priced against a planted problem only when it alone covers at least half of that problem's resources. Findings and problems linked that way form one unit, whose summed estimate is compared with its summed expected savings, within tolerance. Estimates below the range are listed as **conservative** with their proposed change, for a human to judge whether the agent chose a safer fix. They aren't failures, but they don't count as accurate either. Overestimates are failures. A problem found only through a thin overlap is shown as "found, not priced". Estimates from findings that aren't priced still get listed against the expected range of the problems they touch, and are flagged when above it, so they can't slip through unchecked.
 - **Coverage:** share of a planted problem's resources the agent included. Reported, no target.
 
-The matching rule was revised from an earlier "a finding must include all of a problem's resources" version: that marked partial finds as misses, while plain overlap alone let one sloppy finding chain unrelated problems into a single, easy-to-hit savings total. Overlap now decides *found*; the 50% rule decides *fully found* and what gets priced together.
+The matching rule was revised from an earlier "a finding must include all of a problem's resources" version: that marked partial finds as misses, while plain overlap alone let one sloppy finding chain unrelated problems into a single, easy-to-hit savings total. Overlap now decides _found_; the 50% rule decides _fully found_ and what gets priced together.
 
 Agents are non-deterministic, so the scorecard shows the mean **and the worst run** against each target, plus how often each planted problem was found. Runs that fail for infrastructure reasons (API errors, crashes) are listed but left out of the metrics; runs the agent cut short are scored and flagged. Results are saved to `evals/results/` after every run, tagged with hashes of the prompt and the answer key.
 
@@ -73,13 +96,13 @@ Exit code: 1 if no run could be scored; `pnpm eval --strict` also exits 1 if the
 
 3 runs on `claude-sonnet-5-5`, 2026-10-17 (prompt `1d75835de459`, answer key `dbe2d5c80907`), about 165k tokens per run:
 
-| Metric           | Mean | Worst run | Target   |        |
-| ---------------- | ---- | --------- | -------- | ------ |
-| Recall           | 8/8  | 8/8       | ≥ 7/8    | pass   |
-| Fully found      | 8/8  | 8/8       | reported |        |
-| Precision        | 96%  | 89%       | ≥ 85%    | pass   |
-| Decoys flagged   | 0    | 0         | 0        | pass   |
-| Savings accuracy | 63%  | 50%       | ≥ 75%    | fail   |
+| Metric           | Mean | Worst run | Target   |      |
+| ---------------- | ---- | --------- | -------- | ---- |
+| Recall           | 8/8  | 8/8       | ≥ 7/8    | pass |
+| Fully found      | 8/8  | 8/8       | reported |      |
+| Precision        | 96%  | 89%       | ≥ 85%    | pass |
+| Decoys flagged   | 0    | 0         | 0        | pass |
+| Savings accuracy | 63%  | 50%       | ≥ 75%    | fail |
 
 **Detection:** every planted problem was found, with all of its resources, in every run. No decoy was flagged in any run.
 
@@ -99,15 +122,15 @@ For a cost tool, overstating savings is the dangerous error, and it never happen
 
 The same eval, 3 runs per model, run on 2026-10-17 with the same prompt and answer key:
 
-| | Sonnet 5.5 (default) | Opus 5.5 | Haiku 4.5 |
-|---|---|---|---|
-| Recall | 8/8 | 8/8 | 0.7/8 (worst 0) |
-| Precision | 96% (worst 89%) | 100% | 33% |
-| Decoys flagged | 0 | 0 | 0 |
-| Savings accuracy | 63% (worst 50%), all conservative | 63% (worst 50%), all conservative | n/a |
-| Runs completed | 3/3 | 3/3 | 0/3 (all hit the 25-turn cap) |
-| Tokens per run | ~165k | ~192k | ~337k |
-| Time per run | ~87 s | ~115 s | ~67 s (capped) |
+|                  | Sonnet 5.5 (default)              | Opus 5.5                          | Haiku 4.5                     |
+| ---------------- | --------------------------------- | --------------------------------- | ----------------------------- |
+| Recall           | 8/8                               | 8/8                               | 0.7/8 (worst 0)               |
+| Precision        | 96% (worst 89%)                   | 100%                              | 33%                           |
+| Decoys flagged   | 0                                 | 0                                 | 0                             |
+| Savings accuracy | 63% (worst 50%), all conservative | 63% (worst 50%), all conservative | n/a                           |
+| Runs completed   | 3/3                               | 3/3                               | 0/3 (all hit the 25-turn cap) |
+| Tokens per run   | ~165k                             | ~192k                             | ~337k                         |
+| Time per run     | ~87 s                             | ~115 s                            | ~67 s (capped)                |
 
 - **Opus** matched Sonnet on detection and scored exactly the same on savings, with zero overestimates. That suggests the conservative estimates are judgment calls about safer fixes, not a capability limit. It used more tokens, at a higher price per token, and was slower.
 - **Haiku** looked in the right places, but made one tool call per turn even though the prompt says to batch independent queries. It also left all its reporting to the end, so every run hit the turn cap before writing up most of its findings. Even capped, it used about twice as many tokens per run as Sonnet. A model that's cheaper per token isn't automatically cheaper per task.
