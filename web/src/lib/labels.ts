@@ -19,12 +19,15 @@ export function callLabel(call: ToolCallRecord): { kind: CallKind; label: string
   const { name, input, isError, summary } = call;
   let label: string;
   let result = summary;
+  const REJECTED = 'Finding rejected: ';
   let kind: CallKind = 'query';
 
   if (name === 'report_finding') {
     const title = text(input, 'title').trim() || 'untitled finding';
     if (isError) {
       label = `Finding rejected: ${title}`;
+      // The tool's summary already starts with the prefix the label carries.
+      if (summary.startsWith(REJECTED)) result = summary.slice(REJECTED.length);
     } else {
       label = `Reported: ${title}`;
       const savings = field(input, 'estimated_monthly_savings_usd');

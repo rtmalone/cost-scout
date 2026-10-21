@@ -110,11 +110,11 @@ describe('callLabel', () => {
 
   it('marks a rejected finding as an error', () => {
     const r = callLabel(
-      call({ name: 'report_finding', input: { title: 'Bad' }, isError: true, summary: 'Unknown resource id' }),
+      call({ name: 'report_finding', input: { title: 'Bad' }, isError: true, summary: 'Finding rejected: rollback is required' }),
     );
     assert.equal(r.kind, 'error');
-    assert.ok(r.label.startsWith('Finding rejected:'));
-    assert.equal(r.result, 'Unknown resource id');
+    assert.equal(r.label, 'Finding rejected: Bad');
+    assert.equal(r.result, 'rollback is required');
   });
 
   it('marks a failed query as an error', () => {

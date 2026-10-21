@@ -10,9 +10,9 @@ import { createUiServer } from './server.ts';
 
 const problems: string[] = [];
 const dbPath = join(DEFAULT_DATA_DIR, DB_FILENAME);
-if (!existsSync(dbPath)) problems.push('No dataset found. Run pnpm generate first.');
+if (!existsSync(dbPath)) problems.push('No dataset found. Run pnpm generate first. Then restart pnpm ui.');
 if (!process.env.ANTHROPIC_API_KEY) {
-  problems.push('ANTHROPIC_API_KEY is not set. Copy .env.example to .env and add your key.');
+  problems.push('ANTHROPIC_API_KEY is not set. Copy .env.example to .env and add your key. Then restart pnpm ui.');
 }
 
 const db = existsSync(dbPath) ? await ReadOnlyDb.open(dbPath) : null;

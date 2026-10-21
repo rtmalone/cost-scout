@@ -155,9 +155,15 @@ interface Reply {
   body: string;
 }
 
-function request(port: number, method: string, path: string, body?: string): Promise<Reply> {
+function request(
+  port: number,
+  method: string,
+  path: string,
+  body?: string,
+  headers: http.OutgoingHttpHeaders = {},
+): Promise<Reply> {
   return new Promise((resolve, reject) => {
-    const req = http.request({ host: '127.0.0.1', port, method, path }, (res) => {
+    const req = http.request({ host: '127.0.0.1', port, method, path, headers }, (res) => {
       let data = '';
       res.setEncoding('utf8');
       res.on('data', (c) => (data += c));
@@ -169,7 +175,9 @@ function request(port: number, method: string, path: string, body?: string): Pro
 }
 
 const getStatus = async (port: number) => JSON.parse((await request(port, 'GET', '/api/status')).body) as UiStatus;
-const postRun = (port: number, body: string) => request(port, 'POST', '/api/run', body);
+const JSON_TYPE = { 'content-type': 'application/json' };
+const postRun = (port: number, body: string, headers: http.OutgoingHttpHeaders = {}) =>
+  request(port, 'POST', '/api/run', body, { ...JSON_TYPE, ...headers });
 const ndjson = (body: string) => body.split('\n').filter(Boolean).map((l) => JSON.parse(l) as RunEvent);
 
 const done = () => message([text('Nothing found.')], 'end_turn');
@@ -234,7 +242,7 @@ describe('ui server', () => {
     };
     const { port } = await start({ client });
 
-    const req = http.request({ host: '127.0.0.1', port, method: 'POST', path: '/api/run' });
+    const req = http.request({ host: '127.0.0.1', port, method: 'POST', path: '/api/run', headers: JSON_TYPE });
     req.on('error', () => {});
     req.on('response', (res) => {
       res.on('error', () => {});
@@ -256,6 +264,38 @@ describe('ui server', () => {
     const res = await postRun(port, '{"question":"x"}');
     assert.equal(res.status, 503);
     assert.deepEqual(JSON.parse(res.body), { error: problems[0] });
+  });
+
+  it('rejects a non-JSON content type without starting a run', async () => {
+    const { client } = fakeClient([done()]);
+    const { port } = await start({ client });
+    const res = await postRun(port, '{"question":"x"}', { 'content-type': 'text/plain' });
+    assert.equal(res.status, 415);
+    assert.deepEqual(JSON.parse(res.body), { error: 'Content-Type must be application/json.' });
+    assert.equal((await getStatus(port)).busy, false);
+    const withCharset = await postRun(port, '{"question":"x"}', { 'content-type': 'application/json; charset=utf-8' });
+    assert.equal(withCharset.status, 200);
+  });
+
+  it('rejects cross-site and rebinding requests', async () => {
+    const { port } = await start();
+    const evil = await postRun(port, '{"question":"x"}', { origin: 'https://evil.example' });
+    assert.equal(evil.status, 403);
+    assert.deepEqual(JSON.parse(evil.body), { error: 'Forbidden.' });
+    assert.equal((await getStatus(port)).busy, false);
+    const rebound = await request(port, 'GET', '/api/status', undefined, { host: 'evil.example:4317' });
+    assert.equal(rebound.status, 403);
+    const reboundRun = await postRun(port, '{"question":"x"}', { host: 'evil.example:4317' });
+    assert.equal(reboundRun.status, 403);
+  });
+
+  it('allows a loopback Origin on another port', async () => {
+    const { client } = fakeClient([done()]);
+    const { port } = await start({ client });
+    const res = await postRun(port, '{"question":"x"}', { origin: 'http://localhost:5173' });
+    assert.equal(res.status, 200);
+    const ipv6 = await request(port, 'GET', '/api/status', undefined, { host: `[::1]:${port}` });
+    assert.equal(ipv6.status, 200);
   });
 
   it('rejects a malformed body', async () => {

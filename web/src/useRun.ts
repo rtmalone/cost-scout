@@ -52,7 +52,6 @@ export function useRun(): {
       if (abortRef.current) return;
       const controller = new AbortController();
       abortRef.current = controller;
-      dispatch({ type: 'client_started', question });
       void (async () => {
         try {
           const res = await fetch('/api/run', {
@@ -67,6 +66,8 @@ export function useRun(): {
             dispatch({ type: 'client_error', error });
             return;
           }
+          // Only now does the run replace the previous one; a refused request keeps its results.
+          dispatch({ type: 'client_started', question });
           let ended = false;
           await readNdjson(res.body, (e) => {
             if (e.type === 'run_finished' || e.type === 'run_failed') ended = true;

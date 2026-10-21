@@ -56,7 +56,7 @@ export function QuestionCard({
       <button type="submit" className={running ? 'go stop' : 'go'} disabled={!running && notReady}>
         {running ? 'Stop' : 'Investigate'}
       </button>
-      {notReady && status.problems[0] && <p className="problem">{status.problems[0]}</p>}
+      {notReady && status.problems.map((p) => <p key={p} className="problem">{p}</p>)}
     </form>
   );
 }

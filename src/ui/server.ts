@@ -19,11 +19,42 @@ const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
+  '.woff': 'font/woff',
   '.woff2': 'font/woff2',
   '.svg': 'image/svg+xml',
 };
 
 const MAX_BODY_BYTES = 1_000_000;
+
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]', '::1']);
+
+/** The hostname of a `Host` header value or an Origin URL, lowercased and without port, or null. */
+function hostnameOf(value: string, isUrl: boolean): string | null {
+  try {
+    return new URL(isUrl ? value : `http://${value}`).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Blocks DNS rebinding (Host) and cross-site requests (Origin): only loopback pages may talk to
+ * this server, since a run spends the user's API credit.
+ */
+function isLocalRequest(req: http.IncomingMessage): boolean {
+  const host = req.headers.host;
+  const hostName = host === undefined ? null : hostnameOf(host, false);
+  if (hostName === null || !LOOPBACK_HOSTS.has(hostName)) return false;
+  const origin = req.headers.origin;
+  if (origin === undefined) return true;
+  const originName = hostnameOf(origin, true);
+  return originName !== null && LOOPBACK_HOSTS.has(originName);
+}
+
+function isJson(req: http.IncomingMessage): boolean {
+  const type = (req.headers['content-type'] ?? '').split(';')[0]?.trim().toLowerCase();
+  return type === 'application/json';
+}
 
 function sendJson(res: http.ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -67,6 +98,7 @@ export function createUiServer(opts: UiServerOptions): http.Server {
   const status = (): UiStatus => ({ ready, problems: opts.problems, model: opts.model, busy });
 
   async function handleRun(req: http.IncomingMessage, res: http.ServerResponse) {
+    if (!isJson(req)) return sendJson(res, 415, { error: 'Content-Type must be application/json.' });
     if (!ready || !opts.db) return sendJson(res, 503, { error: opts.problems.join(' ') });
     if (busy) return sendJson(res, 409, { error: 'A run is already in progress.' });
 
@@ -136,6 +168,10 @@ export function createUiServer(opts: UiServerOptions): http.Server {
   return http.createServer((req, res) => {
     const url = req.url ?? '/';
     const path = url.split(/[?#]/)[0];
+    if (path?.startsWith('/api/') && !isLocalRequest(req)) {
+      sendJson(res, 403, { error: 'Forbidden.' });
+      return;
+    }
     const handled =
       req.method === 'GET' && path === '/api/status'
         ? Promise.resolve(sendJson(res, 200, status()))
