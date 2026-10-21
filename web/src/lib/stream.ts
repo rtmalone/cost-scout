@@ -11,14 +11,20 @@ export async function readNdjson(
   const flush = (line: string) => {
     if (line.trim()) onEvent(JSON.parse(line) as RunEvent);
   };
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
-    lines.forEach(flush);
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      lines.forEach(flush);
+    }
+    buffer += decoder.decode();
+    flush(buffer);
+  } catch (err) {
+    // A bad line or a throwing handler: stop reading and let the caller see the error.
+    await reader.cancel().catch(() => {});
+    throw err;
   }
-  buffer += decoder.decode();
-  flush(buffer);
 }

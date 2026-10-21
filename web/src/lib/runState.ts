@@ -70,12 +70,16 @@ function mapTurn(turns: TurnView[], turn: number, f: (t: TurnView) => TurnView):
   return turns.map((t) => (t.turn === turn ? f(t) : t));
 }
 
+/**
+ * Pure: never mutates `state`. Assumes the server's order, so a turn's events
+ * arrive after its turn_started; events for an unknown turn are dropped.
+ */
 export function reduce(state: RunState, e: RunEvent | ClientEvent): RunState {
   switch (e.type) {
     case 'client_started':
       return { ...initialState, phase: 'running', question: e.question };
     case 'client_error':
-      return { ...state, phase: 'finished', error: e.error };
+      return { ...state, phase: 'finished', turns: closeOpenTurns(state), error: e.error };
     case 'run_started':
       return {
         ...state,

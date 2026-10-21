@@ -237,3 +237,83 @@ describe('readNdjson', () => {
     assert.deepEqual(got, [JSON.parse(a), JSON.parse(b)]);
   });
 });
+
+describe('robustness', () => {
+  it('readNdjson keeps multi-byte characters split across byte chunks intact', async () => {
+    const bytes = new TextEncoder().encode(`${JSON.stringify({ type: 'run_failed', error: 'cost €5 😀' })}\n`);
+    const cut = bytes.indexOf(0xe2) + 1; // one byte into the 3-byte €
+    const body = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(bytes.slice(0, cut));
+        c.enqueue(bytes.slice(cut, cut + 5)); // also splits the 4-byte emoji later
+        c.enqueue(bytes.slice(cut + 5));
+        c.close();
+      },
+    });
+    const got: RunEvent[] = [];
+    await readNdjson(body, (e) => got.push(e));
+    assert.deepEqual(got, [{ type: 'run_failed', error: 'cost €5 😀' }]);
+  });
+
+  it('readNdjson cancels the stream and rethrows when a handler throws', async () => {
+    let cancelled = false;
+    const body = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(new TextEncoder().encode('{"type":"run_failed","error":"e"}\n'));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    await assert.rejects(
+      readNdjson(body, () => {
+        throw new Error('handler');
+      }),
+      /handler/,
+    );
+    assert.ok(cancelled);
+  });
+
+  it('client_error closes open turns', () => {
+    const s = apply([
+      started,
+      { type: 'turn_started', turn: 1, startedAt: started.startedAt },
+      { type: 'client_error', error: 'dropped' },
+    ]);
+    assert.equal(s.phase, 'finished');
+    assert.ok(s.turns[0]!.durationMs! >= 0);
+  });
+
+  it('reduce does not mutate its input', () => {
+    const events: (RunEvent | ClientEvent)[] = [
+      { type: 'client_started', question: 'q' },
+      started,
+      { type: 'turn_started', turn: 1, startedAt: started.startedAt },
+      { type: 'turn_ended', turn: 1, durationMs: 5, text: 'done' },
+      { type: 'tool_call', call: call({ id: 'a', turn: 1 }) },
+      { type: 'finding', toolCallId: 'a', finding },
+      { type: 'turn_started', turn: 2, startedAt: started.startedAt },
+      { type: 'turn_ended', turn: 2, durationMs: 5, text: 'sum' },
+      { type: 'run_finished', stopReason: 'completed', summary: 'sum', turns: 2, toolCalls: 1, usage },
+    ];
+    const freeze = <T,>(o: T): T => {
+      if (o && typeof o === 'object') Object.values(o).forEach(freeze);
+      return Object.freeze(o);
+    };
+    // Frozen states throw on any in-place write (modules are strict).
+    let s = initialState;
+    for (const e of events) s = freeze(reduce(s, e));
+    assert.equal(s.phase, 'finished');
+    assert.equal(s.turns[1]!.text, '');
+    assert.equal(s.turns[0]!.calls.length, 1);
+  });
+
+  it('callLabel falls back for missing fields', () => {
+    assert.equal(callLabel(call({ input: {} })).label, 'Query');
+    assert.equal(callLabel(call({ name: 'report_finding', input: {} })).label, 'Reported: untitled finding');
+    assert.equal(
+      callLabel(call({ name: 'report_finding', input: {}, isError: true })).label,
+      'Finding rejected: untitled finding',
+    );
+  });
+});

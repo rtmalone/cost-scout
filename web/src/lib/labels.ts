@@ -22,7 +22,7 @@ export function callLabel(call: ToolCallRecord): { kind: CallKind; label: string
   let kind: CallKind = 'query';
 
   if (name === 'report_finding') {
-    const title = text(input, 'title');
+    const title = text(input, 'title').trim() || 'untitled finding';
     if (isError) {
       label = `Finding rejected: ${title}`;
     } else {
@@ -38,7 +38,7 @@ export function callLabel(call: ToolCallRecord): { kind: CallKind; label: string
   } else {
     const purpose = text(input, 'purpose').trim();
     const sql = text(input, 'sql').replace(/\s+/g, ' ').trim();
-    label = purpose || (sql.length > SQL_LABEL_MAX ? `${sql.slice(0, SQL_LABEL_MAX)}…` : sql);
+    label = purpose || (sql.length > SQL_LABEL_MAX ? `${sql.slice(0, SQL_LABEL_MAX)}…` : sql) || 'Query';
   }
   return { kind: isError ? 'error' : kind, label, result };
 }
