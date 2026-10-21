@@ -37,6 +37,7 @@ export function QuestionCard({
       <textarea
         id="question"
         rows={2}
+        autoFocus
         value={question}
         disabled={running}
         placeholder="Find the biggest cost-saving opportunities"

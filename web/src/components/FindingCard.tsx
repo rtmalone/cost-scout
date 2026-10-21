@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { Finding } from '../../../src/findings.ts';
 import { shortenId, usd } from '../lib/format.ts';
+import { plainText } from '../lib/markdown.ts';
+import { InlineMarkdown, Markdown } from './Markdown.tsx';
 
 const PREVIEW_MAX = 140;
 
@@ -15,14 +17,15 @@ type TabKey = (typeof TABS)[number]['key'];
 
 const RISK_LABEL = { low: 'Low risk', medium: 'Medium risk', high: 'High risk' } as const;
 
-/** The evidence up to its first sentence break, or the first 140 characters. */
-function preview(evidence: string): string {
+/** The evidence, without Markdown markers, up to its first sentence break or the first 140 characters. */
+function preview(markdown: string): string {
+  const evidence = plainText(markdown.replace(/\s+/g, ' '));
   const stop = evidence.indexOf('. ');
   if (stop >= 0 && stop + 1 <= PREVIEW_MAX) return evidence.slice(0, stop + 1);
   return evidence.length > PREVIEW_MAX ? `${evidence.slice(0, PREVIEW_MAX).trimEnd()}…` : evidence;
 }
 
-/** One reported finding. Every field is model-written, so it renders as plain text. */
+/** One reported finding. Every field is model-written, so it renders through Markdown, never as HTML. */
 export function FindingCard({ finding }: { finding: Finding }) {
   const [tab, setTab] = useState<TabKey>('change');
   const active = TABS.find((t) => t.key === tab)!;
@@ -30,7 +33,9 @@ export function FindingCard({ finding }: { finding: Finding }) {
   return (
     <article className="finding">
       <div className="finding-top">
-        <h3 className="finding-title">{finding.title}</h3>
+        <h3 className="finding-title">
+          <InlineMarkdown text={finding.title} />
+        </h3>
         <span className="finding-savings">{usd(finding.estimated_monthly_savings_usd)}/mo</span>
       </div>
       <p className="finding-preview">{preview(finding.evidence)}</p>
@@ -56,9 +61,7 @@ export function FindingCard({ finding }: { finding: Finding }) {
           </button>
         ))}
       </div>
-      <p className="tab-body" role="tabpanel">
-        {active.text(finding)}
-      </p>
+      <Markdown className="tab-body" role="tabpanel" text={active.text(finding)} />
     </article>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { axisTicks } from '../lib/format.ts';
 import type { CallView, TurnView } from '../lib/runState.ts';
+import { InlineMarkdown, Markdown } from './Markdown.tsx';
 
 /** The axis never spans less than this, so the first seconds of a run don't fill the width. */
 const MIN_SPAN_MS = 10_000;
@@ -50,7 +51,7 @@ function TurnRow({ turn, spanMs, elapsedMs }: { turn: TurnView; spanMs: number; 
             />
           )}
         </div>
-        {turn.text && <p className="say">{turn.text}</p>}
+        {turn.text && <Markdown className="say" text={turn.text} />}
         {turn.calls.length > 0 && (
           <div className="calls">
             {turn.calls.map((c) => (
@@ -61,7 +62,7 @@ function TurnRow({ turn, spanMs, elapsedMs }: { turn: TurnView; spanMs: number; 
                 aria-expanded={open.has(c.id)}
                 onClick={() => toggle(c.id)}
               >
-                {c.label}
+                <InlineMarkdown text={c.label} />
                 {c.result && <span className="call-result">{c.result}</span>}
               </button>
             ))}

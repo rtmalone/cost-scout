@@ -2,6 +2,7 @@ import type { UiStatus } from '../../../src/ui/events.ts';
 import { usd } from '../lib/format.ts';
 import { statusText, type RunState } from '../lib/runState.ts';
 import { FindingCard } from './FindingCard.tsx';
+import { Markdown } from './Markdown.tsx';
 
 const tokenCount = new Intl.NumberFormat('en-US');
 
@@ -23,7 +24,7 @@ function EndOfRun({ state, status }: { state: RunState; status: UiStatus | null 
   return (
     <section className={ok ? 'end' : 'end end-early'}>
       <p className="end-status">{statusText(state, status)}</p>
-      {end?.summary && <p className="end-summary">{end.summary}</p>}
+      {end?.summary && <Markdown className="end-summary" text={end.summary} />}
       {stats && <p className="end-stats">{stats.join(' · ')}</p>}
     </section>
   );
@@ -35,7 +36,6 @@ export function ResultsPane({ state, status }: { state: RunState; status: UiStat
 
   return (
     <section className="card results">
-      {state.phase === 'finished' && <EndOfRun state={state} status={status} />}
       <div className="label">Proposed savings</div>
       <div className="savings">
         {usd(state.savingsUsd)}
@@ -63,6 +63,7 @@ export function ResultsPane({ state, status }: { state: RunState; status: UiStat
       ) : (
         state.findings.map((f, i) => <FindingCard key={i} finding={f} />)
       )}
+      {state.phase === 'finished' && <EndOfRun state={state} status={status} />}
     </section>
   );
 }

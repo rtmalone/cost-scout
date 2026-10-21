@@ -18,8 +18,8 @@
   --risk-high: #bf616a; /* nord11 */
   --error: #bf616a; /* nord11 */
   --finding-outline: #6f8f58; /* darker green ring on a finding tick */
-  --font-body: 'Manrope', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-body: "Manrope", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
 body {
@@ -83,28 +83,54 @@ button {
 .question textarea {
   all: unset;
   display: block;
+  box-sizing: border-box;
   width: 100%;
   margin-top: 10px;
-  min-height: 56px;
-  font: 600 19px/1.4 var(--font-body);
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--surface);
+  font: 600 18px/1.4 var(--font-body);
   color: var(--text);
   white-space: pre-wrap;
+  cursor: text;
+  transition:
+    border-color 120ms,
+    background 120ms,
+    box-shadow 120ms;
+}
+
+.question textarea:hover:not(:disabled) {
+  border-color: var(--thinking);
+}
+
+.question textarea:focus {
+  border-color: var(--accent);
+  background: var(--card);
+  box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.18);
 }
 
 .question textarea::placeholder {
   color: var(--text-2);
-  opacity: 0.55;
+  font-weight: 400;
+  opacity: 0.7;
 }
 
 .question textarea:disabled {
   color: var(--text-2);
+  cursor: default;
 }
 
 .scope {
   margin: 14px 0 0;
   padding: 12px 14px;
   border-radius: 10px;
-  background: linear-gradient(90deg, rgba(136, 192, 208, 0.18), rgba(143, 188, 187, 0.1));
+  background: linear-gradient(
+    90deg,
+    rgba(136, 192, 208, 0.18),
+    rgba(143, 188, 187, 0.1)
+  );
   font-size: 13px;
   line-height: 1.55;
 }
@@ -183,7 +209,7 @@ button {
 
 /* Results pane */
 .end {
-  margin-bottom: 24px;
+  margin-top: 24px;
   padding: 16px 18px;
   border-radius: 14px;
   background: rgba(163, 190, 140, 0.16);
@@ -203,7 +229,6 @@ button {
   margin: 8px 0 0;
   font-size: 13.5px;
   line-height: 1.6;
-  white-space: pre-wrap;
 }
 
 .end-stats {
@@ -368,7 +393,6 @@ button {
   font-variant-ligatures: none;
   font-size: 13px;
   line-height: 1.6;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
@@ -387,7 +411,7 @@ button {
 }
 
 .now.live::before {
-  content: '';
+  content: "";
   display: inline-block;
   width: 8px;
   height: 8px;
@@ -432,7 +456,11 @@ button {
 }
 
 .think.live {
-  background: repeating-linear-gradient(90deg, var(--thinking) 0 8px, rgba(136, 192, 208, 0.4) 8px 16px);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--thinking) 0 8px,
+    rgba(136, 192, 208, 0.4) 8px 16px
+  );
   background-size: 32px 12px;
   animation: slide 1s linear infinite;
 }
@@ -460,7 +488,32 @@ button {
   line-height: 1.5;
   font-style: italic;
   color: var(--text-2);
-  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Model text rendered from Markdown (summary, finding tabs, turn text) */
+.md > :where(p, ul, ol) {
+  margin: 0;
+}
+
+.md > * + * {
+  margin-top: 0.6em;
+}
+
+.md ul,
+.md ol {
+  padding-left: 1.3em;
+}
+
+.md li + li {
+  margin-top: 0.3em;
+}
+
+.md code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--chip);
+  font: 400 0.88em var(--font-mono);
   overflow-wrap: anywhere;
 }
 

@@ -98,7 +98,7 @@ The user likes the brighter Frost and Aurora accents on the light background. Us
 ### Right pane: results
 
 - **Savings total** so far, large, with "/mo". Under it, the share of the environment's total monthly spend, as a sentence ("18% of the $X/month this environment spends") and a gauge. Total monthly spend = sum of `EffectiveCost` over the last 30 days of the billing period. _(My call: whole environment, not narrowed to the question's topic.)_
-- **When the run ends**: the agent's closing summary appears at the top of this pane, plus how it stopped. A non-`completed` stop reason (turn cap, token budget, error, refusal, stopped by the user) is stated plainly and the findings so far stay visible.
+- **When the run ends**: the agent's closing summary appears at the bottom of this pane, under the savings total and the finding cards, plus how it stopped. (Moved from the top at the user's request after seeing the built page.) A non-`completed` stop reason (turn cap, token budget, error, refusal, stopped by the user) is stated plainly and the findings so far stay visible.
 - **Finding cards** in the order reported, appearing as each is recorded: title, savings, the first sentence or so of the evidence, a risk tag, resource ID tags (shortened in the middle when long), and tabs for **Change**, **Evidence**, **Rollback** and **Approval** showing the full text. Change is the default tab. A rejected `report_finding` (e.g. unknown resource ID) is not shown as a finding; it shows up as a red label in the chart.
 - Small run stats at the bottom: turns, tool calls, tokens. _(My call.)_
 
