@@ -1,0 +1,29 @@
+/* Nord light. Tokens only; components add their own rules. */
+:root {
+  --bg: #eceff4; /* nord6 */
+  --card: #ffffff;
+  --surface: #eceff4; /* inner surfaces, nord6 */
+  --chip: #e5e9f0; /* nord5 */
+  --hairline: #d8dee9; /* nord4 */
+  --text: #2e3440; /* nord0 */
+  --text-2: #4c566a; /* nord3: secondary text and the timing-chart axis */
+  --accent: #5e81ac; /* nord10 */
+  --thinking: #88c0d0; /* nord8 */
+  --query: #d08770; /* nord12 */
+  --finding: #a3be8c; /* nord14 */
+  --gauge-from: #8fbcbb; /* nord7 */
+  --gauge-to: #a3be8c; /* nord14 */
+  --risk-low: #a3be8c; /* nord14 */
+  --risk-medium: #ebcb8b; /* nord13 */
+  --risk-high: #bf616a; /* nord11 */
+  --error: #bf616a; /* nord11 */
+  --font-body: 'Manrope', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
