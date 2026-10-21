@@ -9,7 +9,9 @@
     "scout": "tsx src/cli.ts",
     "eval": "tsx evals/run-evals.ts",
     "test": "node --import tsx --test test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ui": "vite build web && tsx src/ui/main.ts",
+    "ui:dev": "vite web"
   },
   "packageManager": "pnpm@10.29.3",
   "dependencies": {
