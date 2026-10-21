@@ -92,6 +92,27 @@ export interface AgentOptions {
   client?: MessagesClient;
   /** Called after each tool call, for progress output and audit logs. */
   onToolCall?: (call: ToolCallRecord) => void;
+  /** Called just before each model request. */
+  onTurnStart?: (e: TurnStart) => void;
+  /** Called when a response arrives, before its tool calls run. Not called if the request fails or is aborted. */
+  onTurnEnd?: (e: TurnEnd) => void;
+}
+
+export interface TurnStart {
+  /** 1-based. */
+  turn: number;
+  /** ISO timestamp. */
+  startedAt: string;
+}
+
+export interface TurnEnd {
+  turn: number;
+  startedAt: string;
+  durationMs: number;
+  /** The reply's text blocks, joined. */
+  text: string;
+  /** This turn's usage only. */
+  usage: Usage;
 }
 
 export type StopReason =
@@ -213,6 +234,9 @@ export async function runAgent(question: string, opts: AgentOptions): Promise<Ag
       return finish('token_budget', `used ${totalTokens(usage)} of a ${tokenBudget}-token budget`);
     }
 
+    const turnStartedAt = new Date().toISOString();
+    const turnStarted = performance.now();
+    opts.onTurnStart?.({ turn: turns + 1, startedAt: turnStartedAt });
     let response: Anthropic.Message;
     try {
       response = await client.messages.create(buildRequest(messages, opts), { signal: opts.signal });
@@ -223,6 +247,17 @@ export async function runAgent(question: string, opts: AgentOptions): Promise<Ag
     }
     turns++;
     addUsage(usage, response.usage);
+    if (opts.onTurnEnd) {
+      const turnUsage: Usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
+      addUsage(turnUsage, response.usage);
+      opts.onTurnEnd({
+        turn: turns,
+        startedAt: turnStartedAt,
+        durationMs: Math.round(performance.now() - turnStarted),
+        text: textOf(response),
+        usage: turnUsage,
+      });
+    }
 
     const stop = response.stop_reason;
     const calls = response.content.filter((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use');

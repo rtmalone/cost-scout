@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import Anthropic from '@anthropic-ai/sdk';
-import { runAgent, type AgentOptions, type MessagesClient } from '../src/agent/run.ts';
+import { runAgent, type AgentOptions, type MessagesClient, type TurnEnd } from '../src/agent/run.ts';
 import { generate } from '../src/data/generate.ts';
 import { ReadOnlyDb } from '../src/tools/db.ts';
 
@@ -182,6 +182,50 @@ describe('runAgent', () => {
     assert.deepEqual(requests[1]?.messages[1], { role: 'assistant', content: [text('Looking at the schema.'), schema] });
     assert.equal(toolResults(requests[1])[0]?.tool_use_id, schema.id);
     assert.match(String(toolResults(requests[1])[0]?.content), /## billing/);
+  });
+
+  it('reports each turn start and end around the tool calls', async () => {
+    const { client } = fakeClient([
+      message([text('Looking.'), toolUse('describe_schema', {})], 'tool_use'),
+      message([text('Done.')], 'end_turn'),
+    ]);
+    const events: string[] = [];
+    const ends: TurnEnd[] = [];
+
+    await runAgent(
+      'find waste',
+      opts(client, {
+        onTurnStart: (e) => events.push(`start ${e.turn}`),
+        onTurnEnd: (e) => {
+          events.push(`end ${e.turn}`);
+          ends.push(e);
+        },
+        onToolCall: (c) => events.push(`tool ${c.name}`),
+      }),
+    );
+
+    assert.deepEqual(events, ['start 1', 'end 1', 'tool describe_schema', 'start 2', 'end 2']);
+    assert.equal(ends[0]?.text, 'Looking.');
+    assert.equal(ends[0]?.usage.inputTokens, 10);
+    assert.ok((ends[0]?.durationMs ?? -1) >= 0);
+    assert.equal(ends[1]?.text, 'Done.');
+  });
+
+  it('does not report a turn end when the request fails', async () => {
+    const { client } = fakeClient([
+      () => {
+        throw new Anthropic.InternalServerError(500, undefined, 'boom', new Headers());
+      },
+    ]);
+    const events: string[] = [];
+
+    const result = await runAgent(
+      'find waste',
+      opts(client, { onTurnStart: (e) => events.push(`start ${e.turn}`), onTurnEnd: (e) => events.push(`end ${e.turn}`) }),
+    );
+
+    assert.deepEqual(events, ['start 1']);
+    assert.equal(result.stopReason, 'api_error');
   });
 
   it('caches the system prompt and the conversation', async () => {

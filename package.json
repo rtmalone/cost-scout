@@ -9,17 +9,27 @@
     "scout": "tsx src/cli.ts",
     "eval": "tsx evals/run-evals.ts",
     "test": "node --import tsx --test test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p web",
+    "ui": "vite build web && tsx src/ui/main.ts",
+    "ui:dev": "vite web"
   },
   "packageManager": "pnpm@10.29.3",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
     "@duckdb/node-api": "1.5.6-r.1",
-    "dotenv": "^18.0.8"
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/manrope": "^5.3.0",
+    "dotenv": "^18.0.8",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
   }
 }

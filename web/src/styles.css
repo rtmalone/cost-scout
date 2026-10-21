@@ -1,0 +1,643 @@
+/* Nord light. Tokens only; components add their own rules. */
+:root {
+  --bg: #eceff4; /* nord6 */
+  --card: #ffffff;
+  --surface: #eceff4; /* inner surfaces, nord6 */
+  --chip: #e5e9f0; /* nord5 */
+  --hairline: #d8dee9; /* nord4 */
+  --text: #2e3440; /* nord0 */
+  --text-2: #4c566a; /* nord3: secondary text and the timing-chart axis */
+  --accent: #5e81ac; /* nord10 */
+  --thinking: #88c0d0; /* nord8 */
+  --query: #d08770; /* nord12 */
+  --finding: #a3be8c; /* nord14 */
+  --gauge-from: #8fbcbb; /* nord7 */
+  --gauge-to: #a3be8c; /* nord14 */
+  --risk-low: #a3be8c; /* nord14 */
+  --risk-medium: #ebcb8b; /* nord13 */
+  --risk-high: #bf616a; /* nord11 */
+  --error: #bf616a; /* nord11 */
+  --finding-outline: #6f8f58; /* darker green ring on a finding tick */
+  --font-body: "Manrope", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button {
+  font: inherit;
+}
+
+/* Waterfall: white cards floating on Snow Storm. */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 18px;
+  align-items: start;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 18px;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.card {
+  min-width: 0;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 26px;
+  box-shadow:
+    0 1px 0 var(--hairline),
+    0 8px 24px -16px rgba(46, 52, 64, 0.25);
+}
+
+.label {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+}
+
+/* Question card */
+.question textarea {
+  all: unset;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 10px;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--surface);
+  font: 600 18px/1.4 var(--font-body);
+  color: var(--text);
+  white-space: pre-wrap;
+  cursor: text;
+  transition:
+    border-color 120ms,
+    background 120ms,
+    box-shadow 120ms;
+}
+
+.question textarea:hover:not(:disabled) {
+  border-color: var(--thinking);
+}
+
+.question textarea:focus {
+  border-color: var(--accent);
+  background: var(--card);
+  box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.18);
+}
+
+.question textarea::placeholder {
+  color: var(--text-2);
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.question textarea:disabled {
+  color: var(--text-2);
+  cursor: default;
+}
+
+.scope {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(136, 192, 208, 0.18),
+    rgba(143, 188, 187, 0.1)
+  );
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.scope b {
+  color: var(--accent);
+}
+
+.pills {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill {
+  border: 0;
+  cursor: pointer;
+  font-size: 12.5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--text);
+  transition: background 0.15s;
+}
+
+.pill:hover:not(:disabled) {
+  background: var(--hairline);
+}
+
+.pill:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.go {
+  margin-top: 18px;
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  transition: filter 0.15s;
+}
+
+.go:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.go.stop {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1.5px var(--hairline);
+}
+
+.go:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.problem {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--error);
+}
+
+/* Results pane */
+.end {
+  margin-top: 24px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: rgba(163, 190, 140, 0.16);
+}
+
+.end-early {
+  background: rgba(235, 203, 139, 0.2);
+}
+
+.end-status {
+  margin: 0;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.end-summary {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.end-stats {
+  margin: 10px 0 0;
+  font: 400 11px var(--font-mono);
+  color: var(--text-2);
+}
+
+.savings {
+  margin-top: 8px;
+  font: 800 44px/1 var(--font-body);
+  letter-spacing: -0.03em;
+}
+
+.savings .per {
+  margin-left: 4px;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--text-2);
+}
+
+.share {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.gauge {
+  margin-top: 14px;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--chip);
+  overflow: hidden;
+}
+
+.gauge div {
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--gauge-from), var(--gauge-to));
+  transition: width 0.4s ease-out;
+}
+
+.empty {
+  margin: 28px 0 4px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+/* Finding card */
+.finding {
+  margin-top: 16px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--surface);
+  animation: arrive 0.35s ease-out;
+}
+
+.finding:first-of-type {
+  margin-top: 26px;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.finding-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.finding-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.finding-savings {
+  font-weight: 800;
+  font-size: 16px;
+  color: #5f8a4a;
+  white-space: nowrap;
+}
+
+.finding-preview {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.tags {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  font: 400 11px var(--font-mono);
+  background: var(--card);
+  border-radius: 6px;
+  padding: 3px 8px;
+  color: var(--text-2);
+}
+
+.tag.risk {
+  font-family: var(--font-body);
+  font-weight: 800;
+}
+
+.risk-low {
+  color: #3f5a2e;
+  background: rgba(163, 190, 140, 0.35);
+}
+
+.risk-medium {
+  color: #7a5a12;
+  background: rgba(235, 203, 139, 0.45);
+}
+
+.risk-high {
+  color: #8c3a42;
+  background: rgba(191, 97, 106, 0.2);
+}
+
+.tabs {
+  margin-top: 14px;
+  display: flex;
+  gap: 18px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.tab {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 0 0 7px;
+  margin-bottom: -1px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--text-2);
+  border-bottom: 2px solid transparent;
+}
+
+.tab.on {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tab-body {
+  margin: 10px 0 0;
+  /* Manrope joins "--" into a dash, which corrupts CLI flags. */
+  font-variant-ligatures: none;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+/* Work card: status line and timing chart */
+.work-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.now {
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.now.live::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--thinking);
+  margin-right: 8px;
+  animation: pulse 1.2s infinite;
+}
+
+.clock {
+  font: 400 11px var(--font-mono);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.turn {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 6px 0;
+}
+
+.turn-n {
+  font: 400 10px var(--font-mono);
+  color: var(--text-2);
+  padding-top: 1px;
+}
+
+.track {
+  position: relative;
+  height: 12px;
+}
+
+.think {
+  position: absolute;
+  top: 0;
+  height: 12px;
+  min-width: 4px;
+  border-radius: 6px;
+  background: var(--thinking);
+}
+
+.think.live {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--thinking) 0 8px,
+    rgba(136, 192, 208, 0.4) 8px 16px
+  );
+  background-size: 32px 12px;
+  animation: slide 1s linear infinite;
+}
+
+.tick {
+  position: absolute;
+  top: -2px;
+  width: 7px;
+  height: 16px;
+  border-radius: 3px;
+  background: var(--query);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.tick-finding {
+  background: var(--finding);
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 3px var(--finding-outline);
+}
+
+.say {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  font-style: italic;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+/* Model text rendered from Markdown (summary, finding tabs, turn text) */
+.md > :where(p, ul, ol) {
+  margin: 0;
+}
+
+.md > * + * {
+  margin-top: 0.6em;
+}
+
+.md ul,
+.md ol {
+  padding-left: 1.3em;
+}
+
+.md li + li {
+  margin-top: 0.3em;
+}
+
+.md code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--chip);
+  font: 400 0.88em var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.calls {
+  margin-top: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.call {
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font-size: 11.5px;
+  color: var(--text);
+  padding: 3px 9px 3px 8px;
+  border-radius: 6px;
+  background: rgba(208, 135, 112, 0.14);
+  border-left: 3px solid var(--query);
+  overflow-wrap: anywhere;
+}
+
+.call-finding {
+  background: rgba(163, 190, 140, 0.28);
+  border-left-color: var(--finding);
+  font-weight: 700;
+}
+
+.call-error {
+  background: rgba(191, 97, 106, 0.14);
+  border-left-color: var(--error);
+}
+
+.call-result {
+  margin-left: 4px;
+  font: 400 10px var(--font-mono);
+  color: var(--text-2);
+}
+
+.call-detail {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--surface);
+  border-left: 3px solid var(--query);
+  font: 400 10.5px/1.5 var(--font-mono);
+  color: var(--text-2);
+}
+
+.detail-finding {
+  border-left-color: var(--finding);
+}
+
+.detail-error {
+  border-left-color: var(--error);
+}
+
+.call-detail pre {
+  margin: 0 0 4px;
+  font: inherit;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.axis {
+  position: relative;
+  height: 20px;
+  margin: 8px 0 0 54px;
+  border-top: 1px solid var(--text-2);
+  font: 400 10px var(--font-mono);
+  color: var(--text-2);
+}
+
+.axis span {
+  position: absolute;
+  top: 6px;
+  transform: translateX(-50%);
+}
+
+.axis span:first-child {
+  transform: none;
+}
+
+.legend {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.swatch {
+  display: inline-block;
+  width: 7px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+.swatch-thinking {
+  width: 16px;
+  background: var(--thinking);
+}
+
+.swatch-query {
+  background: var(--query);
+}
+
+.swatch-finding {
+  background: var(--finding);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes slide {
+  to {
+    background-position: 32px 0;
+  }
+}

@@ -127,6 +127,9 @@ describe('report_finding', () => {
     assert.equal(out.isError, true);
     assert.match(out.content, /rollback is required/);
     assert.match(out.content, /category must be one of/);
+    assert.equal(out.summary, 'Finding rejected: rollback is required');
+    assert.ok(out.content.startsWith('Finding rejected:\n- rollback is required\n- category must be one of'));
+    assert.ok(out.content.endsWith('Fix these and report it again.'));
   });
 });
 

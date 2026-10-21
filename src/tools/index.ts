@@ -146,7 +146,11 @@ async function reportFinding(input: Record<string, unknown>, ctx: ToolContext): 
     if (unknown.length) problems.push(`unknown resource_ids (not in resources or billing): ${unknown.join(', ')}`);
   }
   if (problems.length) {
-    return { content: `Finding rejected:\n- ${problems.join('\n- ')}\nFix these and report it again.`, isError: true };
+    return {
+      content: `Finding rejected:\n- ${problems.join('\n- ')}\nFix these and report it again.`,
+      isError: true,
+      summary: `Finding rejected: ${problems[0]}`,
+    };
   }
 
   ctx.findings.push(input as unknown as Finding);
