@@ -133,7 +133,6 @@ const finding = {
   approval_notes: 'Confirm with the owner',
 };
 
-
 async function collect(question: string, client: MessagesClient, signal = new AbortController().signal) {
   const events: RunEvent[] = [];
   await runSession(question, { db, model: 'claude-test', signal, client }, (e) => events.push(e));
@@ -161,13 +160,11 @@ describe('runSession', () => {
     const found = events.find((e) => e.type === 'finding');
     assert.equal(found?.finding.title, 'Idle instance');
     const last = events.at(-1);
-    assert.equal(last?.type, 'run_finished');
-    if (last?.type === 'run_finished') {
-      assert.equal(last.summary, '1 finding.');
-      assert.equal(last.stopReason, 'completed');
-      assert.equal(last.turns, 3);
-      assert.equal(last.toolCalls, 2);
-    }
+    assert.ok(last?.type === 'run_finished');
+    assert.equal(last.summary, '1 finding.');
+    assert.equal(last.stopReason, 'completed');
+    assert.equal(last.turns, 3);
+    assert.equal(last.toolCalls, 2);
   });
 
   it('uses the default question when blank', async () => {
@@ -176,8 +173,8 @@ describe('runSession', () => {
     const events = await collect('  ', client);
 
     const started = events[0];
-    assert.equal(started?.type, 'run_started');
-    if (started?.type === 'run_started') assert.equal(started.question, DEFAULT_QUESTION);
+    assert.ok(started?.type === 'run_started');
+    assert.equal(started.question, DEFAULT_QUESTION);
     assert.equal(requests[0]?.messages[0]?.content, DEFAULT_QUESTION);
   });
 
@@ -206,18 +203,60 @@ describe('runSession', () => {
     const events = await collect('find waste', client, controller.signal);
 
     const last = events.at(-1);
-    assert.equal(last?.type, 'run_finished');
-    if (last?.type === 'run_finished') assert.equal(last.stopReason, 'aborted');
+    assert.ok(last?.type === 'run_finished');
+    assert.equal(last.stopReason, 'aborted');
   });
 
-  it('never throws, and stops emitting, when the consumer throws', async () => {
-    const { client } = fakeClient([message([text('Hi.')], 'end_turn')]);
+  it('never throws, stops emitting and aborts the agent when the consumer throws', async () => {
+    const { client, requests } = fakeClient([
+      message([toolUse('describe_schema', {})], 'tool_use'),
+      message([text('Hi.')], 'end_turn'),
+    ]);
     const seen: string[] = [];
     await runSession('q', { db, model: 'claude-test', signal: new AbortController().signal, client }, (e) => {
       seen.push(e.type);
       if (e.type === 'turn_started') throw new Error('stream closed');
     });
     assert.deepEqual(seen, ['run_started', 'turn_started']);
+    assert.equal(requests.length, 1);
+  });
+
+  it('still starts the run, with zero spend, when the spend query fails', async () => {
+    const failing = new Proxy(db, {
+      get(target, prop) {
+        if (prop === 'query') {
+          return (sql: string, ...rest: unknown[]) =>
+            /SUM\(EffectiveCost\)/.test(sql) && /MAX\(ChargePeriodStart\)/.test(sql)
+              ? Promise.resolve({ ok: false, error: 'boom' })
+              : (target.query as (...a: unknown[]) => unknown)(sql, ...rest);
+        }
+        const v = Reflect.get(target, prop, target);
+        return typeof v === 'function' ? v.bind(target) : v;
+      },
+    });
+    const { client } = fakeClient([message([text('Done.')], 'end_turn')]);
+    const events: RunEvent[] = [];
+    await runSession('q', { db: failing, model: 'claude-test', signal: new AbortController().signal, client }, (e) =>
+      events.push(e),
+    );
+    const first = events[0];
+    assert.ok(first?.type === 'run_started');
+    assert.equal(first.monthlySpendUsd, 0);
+    assert.equal(events.at(-1)?.type, 'run_finished');
+  });
+
+  it('ends with a single run_failed when the agent throws', async () => {
+    const { client } = fakeClient([
+      () => {
+        throw new Error('kaboom');
+      },
+    ]);
+    const events = await collect('q', client);
+    const terminals = events.filter((e) => e.type === 'run_finished' || e.type === 'run_failed');
+    assert.equal(terminals.length, 1);
+    const last = events.at(-1);
+    assert.ok(last?.type === 'run_failed');
+    assert.equal(last.error, 'kaboom');
   });
 });
 

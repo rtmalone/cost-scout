@@ -15,6 +15,7 @@ export interface SessionOptions {
 /**
  * Runs the agent and reports it as events: run_started first, then exactly one of run_finished
  * or run_failed last. Never throws; anything that goes wrong ends the stream with run_failed.
+ * If `emit` itself throws, the consumer is gone: the run is aborted and nothing more is emitted.
  */
 export async function runSession(
   question: string,
@@ -39,12 +40,14 @@ export async function runSession(
 
   try {
     const q = question.trim() === '' ? DEFAULT_QUESTION : question;
+    // Spend is context for the UI, not part of the run: a failed query shows as $0.
+    const monthlySpendUsd = await monthlySpend(opts.db).catch(() => 0);
     send({
       type: 'run_started',
       question: q,
       model: opts.model,
       startedAt: new Date().toISOString(),
-      monthlySpendUsd: await monthlySpend(opts.db),
+      monthlySpendUsd,
     });
 
     const result = await runAgent(q, {
